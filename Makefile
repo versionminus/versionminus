@@ -32,4 +32,4 @@ test:
 	pytest -q
 
 pr:
-    devtools/bin/pr.sh
+	devtools/bin/pr.sh
