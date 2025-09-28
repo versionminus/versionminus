@@ -1,0 +1,17 @@
+# Base image with system dependencies
+FROM ubuntu:22.04
+
+LABEL version="1.0.0"
+
+# Set environment variables
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+
+# Copy sys-requirements.txt early to cache apt update and installation
+COPY .devcontainer/sys-requirements.txt /tmp/sys-requirements.txt
+
+# Install system dependencies
+RUN apt update && xargs -a /tmp/sys-requirements.txt apt install -y --no-install-recommends \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm /tmp/sys-requirements.txt

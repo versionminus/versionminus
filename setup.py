@@ -1,0 +1,73 @@
+ # Hybrid versioning: single projection version as sum of all
+ # project components versions
+import subprocess
+from typing import List
+__version__ = "1.0.0"
+__project__ = "licodex"
+def get_contributors() -> List[str]:
+    """Extract unique contributors from git history."""
+    try:
+        result = subprocess.run(
+            ["git", "shortlog", "-sne", "HEAD"],
+            capture_output=True, text=True, check=True
+        )
+        contributors = []
+        for line in result.stdout.splitlines():
+            # Format: commits\tName <email>
+            parts = line.strip().split("\t", 1)
+            if len(parts) == 2:
+                contributors.append(parts[1])
+        return contributors
+    except Exception:
+        # Fall back to hardcoded list if git command fails
+        return ["diogo <d.ogobaltazar+github@gmail.com>"]
+
+__authors__ = get_contributors()
+__author__ = ", ".join(__authors__)
+import os
+from setuptools import setup, find_packages
+
+def read(filename, parent=None):
+    parent = (parent or __file__)
+    try:
+        with open(os.path.join(os.path.dirname(parent), filename)) as f:
+            return f.read()
+    except IOError:
+        return ''
+
+def parse_requirements(filename, parent=None):
+    parent = (parent or __file__)
+    filepath = os.path.join(os.path.dirname(parent), filename)
+    content = read(filename, parent)
+
+    for line_number, line in enumerate(content.splitlines(), 1):
+        candidate = line.strip()
+
+        if candidate.startswith('-r'):
+            for item in parse_requirements(candidate[2:].strip(), filepath):
+                yield item
+        else:
+            yield candidate
+
+# Use README.md as the long description
+with open('README.md', encoding='utf-8') as f:
+    long_description = f.read()
+
+setup(
+    name=__project__,
+    version=__version__,
+    author=", ".join(__author__),  # Use authors as a single string for the author field
+    long_description=long_description,
+    long_description_content_type="text/markdown",
+    python_requires='>=3.8, <4',
+    package_dir={'': 'src'},
+    packages=find_packages(where='src'),
+    install_requires=list(parse_requirements('src/licodex/python-requirements.txt')),
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Intended Audience :: Science/Research',
+        'Topic :: Scientific/Engineering',
+        'Environment :: Console',
+        'Operating System :: OS Independent',
+    ],
+)

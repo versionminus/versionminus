@@ -1,0 +1,22 @@
+# Build tools image
+FROM ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer-base:1.0.0
+
+LABEL version="1.0.0"
+
+# Install Docker
+RUN install -m 0755 -d /etc/apt/keyrings \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc \
+    && chmod a+r /etc/apt/keyrings/docker.asc \
+    && echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
+    | tee /etc/apt/sources.list.d/docker.list > /dev/null \
+    && apt update \
+    && apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js and CDK
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
+    && npm install -g aws-cdk@latest \
+    && apt clean \
+    && rm -rf /var/lib/apt/lists/*

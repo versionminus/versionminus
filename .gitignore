@@ -1,0 +1,32 @@
+**/.*
+**/__pycache__
+**/*.egg-info
+**/*.csv
+**/*.parquet
+**/*.json
+**/*.tgz
+**/dist
+**/build
+**/coverage
+
+# DevContainer entries
+.cache/
+.docker/
+.dotnet/
+.gitconfig
+.gnupg/
+.ssh/
+.sudo_as_admin_successful
+.vscode-server/
+.bash_history
+
+# Exceptions
+!.vscode
+!.devcontainer
+!.devcontainer/devcontainer.json
+!.vscode/*.json
+!package*.json
+!.env.example
+!.bashrc
+!.githooks
+!.gitignore

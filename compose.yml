@@ -1,0 +1,15 @@
+services:
+  licodex:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: licodex
+    container_name: licodex
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+
+networks:
+  siphonn-pro:
+    name: licodex
+    external: true
