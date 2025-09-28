@@ -18,6 +18,6 @@ services:
       - "8000:8000"
 
 networks:
-  siphonn-pro:
+  licodex:
     name: licodex
     external: true

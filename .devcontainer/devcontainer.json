@@ -5,7 +5,7 @@
 		"licodex-devcontainer",
 		"--rm",
 		"--network",
-		"siphonn-pro"
+		"licodex"
 	],
 	"workspaceFolder": "/home/${localEnv:USER}",
 	"workspaceMount": "source=${localWorkspaceFolder},target=/home/${localEnv:USER},type=bind,consistency=cached",
