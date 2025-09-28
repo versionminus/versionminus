@@ -1,0 +1,8 @@
+# Main Python requirements for licodex
+-r db/python-requirements.txt
+-r models/python-requirements.txt
+-r core/python-requirements.txt
+-r services/python-requirements.txt
+-r schemas/python-requirements.txt
+-r repositories/python-requirements.txt
+-r alembic/python-requirements.txt

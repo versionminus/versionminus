@@ -1,30 +1,29 @@
-from pydantic_settings import BaseSettings
-from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, AliasChoices
 from functools import lru_cache
 from typing import Optional
 
 
 class Settings(BaseSettings):
     # App
-    app_name: str = Field(default="licodex-api")
-    environment: str = Field(default="dev")
+    app_name: str = Field(default="licodex-api", validation_alias=AliasChoices("APP_NAME", "LICODEX_APP_NAME"))
+    environment: str = Field(default="dev", validation_alias=AliasChoices("ENVIRONMENT", "ENV"))
     log_level: str = Field(default="INFO")
     api_prefix: str = "/api/v1"
     enable_cors: bool = True
+    api_host: str = Field(default="0.0.0.0")
+    api_port: int = Field(default=8000)
 
     # Database components (primary source of truth)
-    db_user: str = Field(default="licodex")
-    db_password: str = Field(default="licodexpwd")
-    db_host: str = Field(default="db")
-    db_port: int = Field(default=5432)
-    db_name: str = Field(default="licodex")
+    db_user: str = Field(default="licodex", validation_alias=AliasChoices("DB_USER", "POSTGRES_USER"))
+    db_password: str = Field(default="licodexpwd", validation_alias=AliasChoices("DB_PASSWORD", "POSTGRES_PASSWORD"))
+    db_host: str = Field(default="db", validation_alias=AliasChoices("DB_HOST", "POSTGRES_HOST"))
+    db_port: int = Field(default=5432, validation_alias=AliasChoices("DB_PORT", "POSTGRES_PORT"))
+    db_name: str = Field(default="licodex", validation_alias=AliasChoices("DB_NAME", "POSTGRES_DB"))
 
     # Optional full URL override (if set this wins)
     database_url: Optional[str] = None  # expects async driver form if provided
-
-    class Config:
-        env_file = ".env"
-        case_sensitive = False
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # Derived / convenience
     @property

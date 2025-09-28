@@ -1,11 +1,23 @@
 services:
-  pg:
+  db:
     build:
       context: .
-      dockerfile: src/licodex/pg/Dockerfile
-    image: licodex-pg:1.0.0
-    container_name: licodex-pg
+      dockerfile: src/licodex/db/Dockerfile
+    image: licodex-db:1.0.0
+    container_name: licodex-db
     restart: unless-stopped
+    environment:
+      # Postgres image consumes these; defaults also baked into Dockerfile but we keep explicit for clarity
+      POSTGRES_USER: licodex
+      POSTGRES_PASSWORD: licodexpwd
+      POSTGRES_DB: licodex
+    volumes:
+      - licodex-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   api:
     build:
@@ -14,10 +26,16 @@ services:
     image: licodex-api:1.0.0
     container_name: licodex-api
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8000:8000"
+volumes:
+  licodex-db-data:
+    name: licodex-db-data
 
 networks:
-  licodex:
+  default:
     name: licodex
     external: true
