@@ -7,6 +7,7 @@ from licodex.endpoints.user.create import create_user_endpoint
 from licodex.services.user_service import (
     delete_user,
     update_user_email,
+    list_users,
     DuplicateEmailError,
     UserNotFoundError,
 )
@@ -16,6 +17,11 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED)
 async def create_user_route(payload: UserCreate, session: AsyncSession = Depends(get_db)):
     return await create_user_endpoint(payload, session)
+
+
+@router.get("/", response_model=list[UserRead])
+async def list_users_route(session: AsyncSession = Depends(get_db)):
+    return await list_users(session)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

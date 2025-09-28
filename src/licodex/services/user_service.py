@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from licodex.schemas.user import UserCreate
 from licodex.models.user import User
-from licodex.repositories.user_repo import get_by_email, get_by_id
+from licodex.repositories.user_repo import get_by_email, get_by_id, list_all
 import uuid
 
 class UserNotFoundError(Exception):
@@ -43,4 +43,8 @@ async def update_user_email(session: AsyncSession, user_id: uuid.UUID, new_email
     user.email = new_email  # type: ignore
     await session.flush()
     return user
+
+
+async def list_users(session: AsyncSession) -> list[User]:
+    return await list_all(session)
 
