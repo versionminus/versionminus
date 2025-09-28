@@ -1,4 +1,4 @@
-.PHONY: help dev lint format type test migrate install run
+.PHONY: help dev lint format type test migrate install run pr
 
 PYTHON ?= python
 APP_MODULE ?= licodex.api.main:app
@@ -31,5 +31,13 @@ type:
 test:
 	pytest -q
 
+#  make pr title="refactor: api.endpoints, feat: delete, edit user"
+#  make pr title="fix: something"  # Provide your PR title via title variable
+title ?=
 pr:
-	devtools/bin/pr.sh
+	@if [ -z "$(title)" ]; then \
+		echo "Error: title variable is required"; \
+		echo "Usage: make pr title=\"your pr title\""; \
+		exit 1; \
+	fi; \
+	devtools/bin/pr.sh "$(title)"

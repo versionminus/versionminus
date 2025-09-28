@@ -3,14 +3,18 @@
 # pr "Your PR Title"
 set -e  # Exit on any error
 
-# Check if title parameter is provided
-if [ -z "$1" ]; then
+# Accept PR title either as first arg or PR_TITLE env var (Makefile passes arg)
+if [ -n "$1" ]; then
+    PR_TITLE="$1"
+fi
+
+if [ -z "$PR_TITLE" ]; then
     echo "Error: PR title is required"
-    echo "Usage: $0 <pr-title>"
+    echo "Usage: $0 <pr-title> or set PR_TITLE environment variable"
     exit 1
 fi
 
-PR_TITLE="$1"
+PR_BODY=${PR_BODY:-"[licodex] Automated PR"}
 CURRENT_BRANCH=$(git branch --show-current)
 
 # Check if we're on dev branch
@@ -26,47 +30,48 @@ if ! gh auth status >/dev/null 2>&1; then
     exit 1
 fi
 
+
 echo "Creating PR from branch '$CURRENT_BRANCH' to dev..."
 
-# Create PR with merge commit strategy
-gh pr create \
-    --title "[merge-commit] $PR_TITLE" \
-    --base dev \
-    --head "$CURRENT_BRANCH" \
-    --body "[licodex] Automated PR" \
-    --merge
+CREATE_ARGS=(--title "$PR_TITLE" --base dev --head "$CURRENT_BRANCH" --body "$PR_BODY")
 
-echo "PR created successfully"
-
-# Get the PR number for closing it
-PR_NUMBER=$(gh pr list --head "$CURRENT_BRANCH" --json number --jq '.[0].number')
-
-if [ -z "$PR_NUMBER" ]; then
-    echo "Error: Could not find PR number"
-    exit 1
+if [ -n "$PR_DRAFT" ]; then
+    CREATE_ARGS+=(--draft)
 fi
 
-echo "Closing PR #$PR_NUMBER..."
+gh pr create "${CREATE_ARGS[@]}" || {
+    echo "gh pr create failed (maybe PR already exists). Attempting to show existing..." >&2
+    gh pr view --web || true
+    exit 1
+}
 
-# Close the PR with admin privileges
-gh pr close "$PR_NUMBER" --comment "Auto-closed by pr.sh script" --delete-branch=false
+echo "PR created. Leaving it open for review."
+echo "Set PR_AUTO_MERGE=1 to auto-merge once checks pass (rebase strategy)."
 
-echo "PR closed successfully"
-
-# Checkout to dev branch
-echo "Checking out to dev branch..."
-git checkout dev
-
-# Pull latest changes from dev
-echo "Pulling latest changes from dev..."
-git pull origin dev
-
-# Delete the feature branch locally
-echo "Deleting local branch '$CURRENT_BRANCH'..."
-git branch -D "$CURRENT_BRANCH"
-
-# Delete the feature branch remotely
-echo "Deleting remote branch '$CURRENT_BRANCH'..."
-git push origin --delete "$CURRENT_BRANCH"
+if [ "$PR_AUTO_MERGE" = "1" ]; then
+    PR_NUMBER=$(gh pr list --head "$CURRENT_BRANCH" --json number --jq '.[0].number')
+    if [ -n "$PR_NUMBER" ]; then
+        echo "Enabling auto-merge for PR #$PR_NUMBER (rebase)..."
+        gh pr merge "$PR_NUMBER" --rebase --auto || echo "Auto-merge enabling failed (maybe requirements not met)."
+    fi
+fi
 
 echo "✅"
+
+if [ "$PR_CLOSE" = "1" ]; then
+    echo "PR_CLOSE=1 set; closing PR and cleaning up branch..."
+    PR_NUMBER=$(gh pr list --head "$CURRENT_BRANCH" --json number --jq '.[0].number')
+    if [ -z "$PR_NUMBER" ]; then
+            echo "Error: Could not find PR number to close"
+            exit 1
+    fi
+    echo "Closing PR #$PR_NUMBER..."
+    gh pr close "$PR_NUMBER" --comment "Auto-closed by pr.sh script" --delete-branch=false
+    echo "PR closed successfully"
+    echo "Checking out dev and deleting branch..."
+    git checkout dev
+    git pull origin dev
+    git branch -D "$CURRENT_BRANCH" || true
+    git push origin --delete "$CURRENT_BRANCH" || true
+    echo "✅"
+fi
