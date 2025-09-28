@@ -1,8 +1,8 @@
 {
-	"image": "ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer:1.0.0",
+	"image": "ghcr.io/diogobaltazar/licodex-devcontainer:1.0.0",
 	"runArgs": [
 		"--name",
-		"siphonn-pro-licodex-devcontainer",
+		"licodex-devcontainer",
 		"--rm",
 		"--network",
 		"siphonn-pro"

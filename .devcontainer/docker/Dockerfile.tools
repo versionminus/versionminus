@@ -1,5 +1,5 @@
 # Build tools image
-FROM ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer-base:1.0.0
+FROM ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0
 
 LABEL version="1.0.0"
 

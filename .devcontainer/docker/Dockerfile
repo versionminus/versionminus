@@ -1,5 +1,5 @@
 # Development environment
-FROM ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer-tools:1.0.0
+FROM ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0
 
 LABEL version="1.0.0"
 

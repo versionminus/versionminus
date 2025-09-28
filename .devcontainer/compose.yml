@@ -1,8 +1,8 @@
 # create the network before building the devcontainer
-# docker network create siphonn-pro
+# docker network create licodex
 #
 # build base, tools and devcontainer images
-# USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache
+# USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 #
 # >Dev Containers: Reopen in Container
 services:
@@ -11,14 +11,14 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.base
-    image: ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer-base:1.0.0
+    image: ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0
 
   # Tools image with Docker, Node.js, and CDK
   tools:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.tools
-    image: ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer-tools:1.0.0
+    image: ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0
     depends_on:
       - base
 
@@ -30,7 +30,7 @@ services:
       args:
         USRID: ${USRID}
         USRNAME: ${USRNAME}
-    image: ghcr.io/nn-research-early-development/siphonn-pro-licodex-devcontainer:1.0.0
-    container_name: siphonn-pro-licodex-devcontainer
+    image: ghcr.io/diogobaltazar/licodex-devcontainer:1.0.0
+    container_name: licodex-devcontainer
     depends_on:
       - tools
