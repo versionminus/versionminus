@@ -1,25 +1,35 @@
-.PHONY: dev lint format type test migrate
+.PHONY: help dev lint format type test migrate install run
 
-PYTHON=python
-APP_MODULE=licodex.main:app
+PYTHON ?= python
+APP_MODULE ?= licodex.api.main:app
 
-install:
-	$(PYTHON) -m pip install --upgrade pip
-	$(PYTHON) -m pip install -e .
+help:
+	@echo "Available targets:"
+	@grep -E '^# {2,}make ' Makefile | sed -E 's/^# +//'
 
 run:
 	uvicorn $(APP_MODULE) --reload --host 0.0.0.0 --port 8000
 
-dev: install run
+build:
+	docker compose build --no-cache
+
+up:
+	docker compose up -d
+
+down:
+	docker compose down -v
 
 lint:
-	ruff check src/
+	ruff check src/licodex
 
 format:
-	ruff format src/
+	ruff format src/licodex
 
 type:
 	mypy src/licodex
 
 test:
 	pytest -q
+
+pr:
+	devtools/bin/pr.sh

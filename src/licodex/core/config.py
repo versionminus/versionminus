@@ -5,7 +5,7 @@ from typing import Optional
 
 
 class Settings(BaseSettings):
-    # App
+    # API
     app_name: str = Field(default="licodex-api", validation_alias=AliasChoices("APP_NAME", "LICODEX_APP_NAME"))
     environment: str = Field(default="dev", validation_alias=AliasChoices("ENVIRONMENT", "ENV"))
     log_level: str = Field(default="INFO")
