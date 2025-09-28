@@ -2,7 +2,7 @@ services:
   pg:
     build:
       context: .
-      dockerfile: src/licodex/db/Dockerfile
+      dockerfile: src/licodex/pg/Dockerfile
     image: licodex-pg:1.0.0
     container_name: licodex-pg
     restart: unless-stopped

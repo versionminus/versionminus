@@ -39,7 +39,11 @@ ENV PYTHONUNBUFFERED=1 \
 ## Python dependencies (layer invalidates only when requirements change)
 ## We copy ONLY requirement files to maximize cache hits.
 ## ------------------------------------------------------------------
-COPY src/python-requirements.txt /tmp/python-requirements.txt
+COPY src/licodex/utils/python-requirements.txt /tmp/requirements/utils.txt
+COPY src/licodex/api/python-requirements.txt /tmp/requirements/api.txt
+COPY src/licodex/pg/python-requirements.txt /tmp/requirements/pg.txt
+COPY src/licodex/model/python-requirements.txt /tmp/requirements/model.txt
+COPY tests/python-requirements.txt /tmp/requirements/tests.txt
 
 RUN set -eux; \
     for f in /tmp/requirements/*.txt; do \

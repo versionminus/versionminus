@@ -1,7 +1,7 @@
 # create the network before building the devcontainer
 # docker network create licodex
 #
-# build base, tools and devcontainer images
+# build base, tools and devcontainer images (don't pull, they don't exist on first run)
 # USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 #
 # >Dev Containers: Reopen in Container

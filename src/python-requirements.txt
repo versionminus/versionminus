@@ -1,0 +1,5 @@
+# Main Python requirements for licodex
+-r licodex/python-requirements.txt
+-r licodex/pg/python-requirements.txt
+-r licodex/model/python-requirements.txt
+-r licodex/utils/python-requirements.txt
