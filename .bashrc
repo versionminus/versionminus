@@ -61,3 +61,5 @@ ARROW_ICON="❯"
 
 # Set the PS1 with dynamic repository name and current directory
 PS1="${GRAY} ${WHITE}${BOLD}dipm${RESET}${GRAY}@${PURPLE}${BOLD}\$(get_repo_name)${RESET} ${BLUE}${GREEN}\w${RESET}\n ${ORANGE}${BOLD}${ARROW_ICON}${RESET} "
+
+alias pr='./bin/pr.sh'
