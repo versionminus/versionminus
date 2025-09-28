@@ -2,7 +2,19 @@
  # project components versions
 import subprocess
 from typing import List
-__version__ = "1.0.0"
+def read_version():
+    """Read project version from VERSION file.
+
+    Falls back to '0.0.0' if file missing (should not happen in release).
+    """
+    try:
+        here = os.path.dirname(__file__)
+        with open(os.path.join(here, 'VERSION'), 'r', encoding='utf-8') as f:  # type: ignore
+            return f.read().strip()
+    except Exception:
+        return "0.0.0"
+
+__version__ = read_version()
 __project__ = "licodex"
 def get_contributors() -> List[str]:
     """Extract unique contributors from git history."""
