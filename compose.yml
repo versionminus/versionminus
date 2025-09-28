@@ -1,10 +1,18 @@
 services:
-  licodex:
+  pg:
     build:
       context: .
-      dockerfile: Dockerfile
-    image: licodex
-    container_name: licodex
+      dockerfile: src/licodex/db/Dockerfile
+    image: licodex-pg:1.0.0
+    container_name: licodex-pg
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: src/licodex/api/Dockerfile
+    image: licodex-api:1.0.0
+    container_name: licodex-api
     restart: unless-stopped
     ports:
       - "8000:8000"

@@ -63,3 +63,14 @@ ARROW_ICON="❯"
 PS1="${GRAY} ${WHITE}${BOLD}dipm${RESET}${GRAY}@${PURPLE}${BOLD}\$(get_repo_name)${RESET} ${BLUE}${GREEN}\w${RESET}\n ${ORANGE}${BOLD}${ARROW_ICON}${RESET} "
 
 alias pr='./bin/pr.sh'
+
+# git utils
+alias gc='git commit -m' # gc "feat: <message>"
+alias gp='git push'
+alias gpl='git pull'
+alias gst='git status'
+alias gco='git checkout' # gco <branch-name>
+alias gcb='git checkout -b' # gcb <new-branch-name>
+alias gl='git log --oneline --graph --decorate --all'
+alias ga='git add' # ga <file-name>
+alias gaa='git add .'
