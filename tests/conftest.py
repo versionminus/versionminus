@@ -8,7 +8,7 @@ from typing import AsyncGenerator
 
 # Configure database for tests via settings module rather than hardcoding directly.
 # Allow overriding with TEST_DATABASE_URL; fall back to a local sqlite file.
-test_db_url = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///./test.db")
+test_db_url = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///./tests/test.db")
 os.environ.setdefault("DATABASE_URL", test_db_url)
 
 from licodex.core import config as _config  # noqa: E402
