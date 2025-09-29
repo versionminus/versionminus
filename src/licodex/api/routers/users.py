@@ -92,13 +92,13 @@ async def assign_user_organisation_route(
     try:
         user = await assign_user_organisation(session, user_id, organisation_id)
         await session.commit()
-        # eager load organisation by accessing relationship (already set by FK; lazy load triggers if needed)
+        # Relationship set eagerly in service; model config from_attributes allows direct return
         return UserWithOrganisationRead(
             id=user.id,
             email=user.email,
             role=user.role,
             created_at=user.created_at,
-            organisation=user.organisation,
+            organisation=user.organisation,  # already populated, no lazy load
         )
     except UserNotFoundError:
         raise HTTPException(status_code=404, detail="User not found")

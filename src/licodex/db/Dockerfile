@@ -35,10 +35,6 @@ COPY src/licodex/__init__.py ./licodex/__init__.py
 ENV PYTHONPATH=/app
 RUN mkdir -p /docker-entrypoint-initdb.d /app/bin
 
-# Script 00 - derive Postgres env vars from config (exec on first init only)
-COPY src/licodex/db/bin/00_config_export.sh /docker-entrypoint-initdb.d/00_config_export.sh
-RUN chmod +x /docker-entrypoint-initdb.d/00_config_export.sh
-
 COPY src/licodex/db/bin/run_with_migrations.sh /app/bin/run_with_migrations.sh
 RUN chmod +x /app/bin/run_with_migrations.sh
 
