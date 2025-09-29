@@ -1,7 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from licodex.schemas.user import UserCreate
 from licodex.models.user import User
-from licodex.repositories.user_repo import get_by_email, get_by_id, list_all
+from licodex.repositories.user import get_by_email, get_by_id, list_all, list_all_with_org_join
+from licodex.services.organisation import get_organisation_or_404, OrganisationNotFoundError
 import uuid
 
 class UserNotFoundError(Exception):
@@ -47,4 +48,18 @@ async def update_user_email(session: AsyncSession, user_id: uuid.UUID, new_email
 
 async def list_users(session: AsyncSession) -> list[User]:
     return await list_all(session)
+
+
+async def list_users_detailed(session: AsyncSession, organisation_id=None):  # type: ignore
+    rows = await list_all_with_org_join(session, organisation_id=organisation_id)
+    return rows
+
+
+async def assign_user_organisation(session: AsyncSession, user_id: uuid.UUID, organisation_id: uuid.UUID) -> User:
+    user = await get_user_or_404(session, user_id)
+    # ensure organisation exists
+    await get_organisation_or_404(session, organisation_id)
+    user.organisation_id = organisation_id  # type: ignore
+    await session.flush()
+    return user
 
