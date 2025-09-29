@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from licodex.api import deps
 from licodex.schemas.user import UserCreate, UserRead, UserEmailUpdate, UserWithOrganisationRead
 from licodex.services.user import (
+    create_user,
     delete_user,
     update_user_email,
     list_users,
