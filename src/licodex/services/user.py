@@ -58,8 +58,10 @@ async def list_users_detailed(session: AsyncSession, organisation_id=None):  # t
 async def assign_user_organisation(session: AsyncSession, user_id: uuid.UUID, organisation_id: uuid.UUID) -> User:
     user = await get_user_or_404(session, user_id)
     # ensure organisation exists
-    await get_organisation_or_404(session, organisation_id)
-    user.organisation_id = organisation_id  # type: ignore
+    org = await get_organisation_or_404(session, organisation_id)
+    # Set the relationship itself so it's already present on the instance and no
+    # lazy load is required later (avoids MissingGreenlet in async contexts).
+    user.organisation = org  # type: ignore[attr-defined]
     await session.flush()
     return user
 
