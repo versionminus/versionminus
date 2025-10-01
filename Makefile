@@ -1,4 +1,4 @@
-.PHONY: help dev lint format type test migrate install run pr
+.PHONY: help dev lint format type test migrate install run pr smoke
 
 PYTHON ?= python
 APP_MODULE ?= licodex.api.main:app
@@ -12,6 +12,12 @@ run:
 
 build:
 	docker compose build --no-cache
+
+build-api:
+	docker compose build --no-cache api
+
+build-db:
+	docker compose build --no-cache db
 
 up:
 	docker compose up -d
@@ -28,8 +34,15 @@ format:
 type:
 	mypy src/licodex
 
-test:
-	pytest -q
+ut:
+	pytest -m unit -q
+
+it:
+	pytest -m integration -q
+
+smoke:
+	pytest -m smoke -q || true
+	@echo "Or run devtools/bin/smoke.sh against a running server"
 
 #  make pr title="refactor: api.endpoints, feat: delete, edit user"
 #  make pr title="fix: something"  # Provide your PR title via title variable

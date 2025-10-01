@@ -2,17 +2,14 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from licodex.api import deps
-from licodex.schemas.user import UserCreate, UserRead, UserEmailUpdate, UserWithOrganisationRead
+from licodex.schemas.user import UserCreate, UserRead, UserEmailUpdate
 from licodex.services.user import (
     create_user,
     delete_user,
     update_user_email,
     list_users,
-    list_users_detailed,
-    assign_user_organisation,
     DuplicateEmailError,
     UserNotFoundError,
-    OrganisationNotFoundError,
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -36,21 +33,7 @@ async def list_users_route(session: AsyncSession = Depends(deps.get_db)):
     return await list_users(session)
 
 
-@router.get("/detailed", response_model=list[UserWithOrganisationRead], summary="List users with organisation",
-            description="List users including their organisation (if any). Optionally filter by organisation_id.")
-async def list_users_detailed_route(organisation_id: uuid.UUID | None = None, session: AsyncSession = Depends(deps.get_db)):
-    rows = await list_users_detailed(session, organisation_id=organisation_id)
-    # Map (User, Organisation|None) -> schema
-    out: list[UserWithOrganisationRead] = []
-    for user, org in rows:
-        out.append(UserWithOrganisationRead(
-            id=user.id,
-            email=user.email,
-            role=user.role,
-            created_at=user.created_at,
-            organisation=(None if not org else org)
-        ))
-    return out
+"""User routes (organisation functionality removed)."""
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -81,27 +64,4 @@ async def update_user_email_route(
         raise HTTPException(status_code=409, detail="Email already registered")
 
 
-@router.patch("/{user_id}/organisation/{organisation_id}", response_model=UserWithOrganisationRead,
-              summary="Assign user to organisation",
-              description="Associate a user with an organisation by ID.")
-async def assign_user_organisation_route(
-    user_id: uuid.UUID,
-    organisation_id: uuid.UUID,
-    session: AsyncSession = Depends(deps.get_db),
-):
-    try:
-        user = await assign_user_organisation(session, user_id, organisation_id)
-        await session.commit()
-        # Relationship set eagerly in service; model config from_attributes allows direct return
-        return UserWithOrganisationRead(
-            id=user.id,
-            email=user.email,
-            role=user.role,
-            created_at=user.created_at,
-            organisation=user.organisation,  # already populated, no lazy load
-        )
-    except UserNotFoundError:
-        raise HTTPException(status_code=404, detail="User not found")
-    except OrganisationNotFoundError:
-        raise HTTPException(status_code=404, detail="Organisation not found")
 
