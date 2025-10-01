@@ -18,6 +18,8 @@ _settings = _config.get_settings()
 from licodex.api.main import app  # noqa: E402
 from licodex.db.session import AsyncSessionLocal, engine, Base  # noqa: E402
 from licodex.models.user import User  # noqa: E402
+from licodex.models.thread import Thread  # noqa: E402
+from licodex.models.message import Message  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 
 @pytest_asyncio.fixture(autouse=True, scope="session")
@@ -46,11 +48,14 @@ async def client():
         yield c
 
 @pytest_asyncio.fixture(autouse=True)
-async def _clear_user_table():
-    """Ensure isolated tests by clearing user table before each test.
-    Uses a separate session to avoid interfering with request-scoped sessions.
+async def _clear_tables():
+    """Ensure isolated tests by clearing core tables before each test.
+    Order matters due to FK constraints: Message -> Thread -> User.
     """
     async with AsyncSessionLocal() as session:  # type: ignore
+        # delete in child->parent order
+        await session.execute(delete(Message))
+        await session.execute(delete(Thread))
         await session.execute(delete(User))
         await session.commit()
     yield
