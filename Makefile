@@ -28,8 +28,11 @@ format:
 type:
 	mypy src/licodex
 
-test:
-	pytest -q
+ut:
+	pytest -m unit -q
+
+it:
+	pytest -m integration -q
 
 #  make pr title="refactor: api.endpoints, feat: delete, edit user"
 #  make pr title="fix: something"  # Provide your PR title via title variable
