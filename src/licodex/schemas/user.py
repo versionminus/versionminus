@@ -1,9 +1,7 @@
 import uuid
 from datetime import datetime
 from pydantic import BaseModel, EmailStr
-from typing import Optional
 from typing import Literal
-from .organisation import OrganisationRead
 from .base import ORMBase
 
 class UserCreate(BaseModel):
@@ -20,7 +18,4 @@ class UserRead(ORMBase):
 class UserEmailUpdate(BaseModel):
     email: EmailStr
 
-
-class UserWithOrganisationRead(UserRead):
-    organisation: Optional[OrganisationRead] = None
 
