@@ -1,0 +1,175 @@
+<mxfile host="65bd71144e">
+    <diagram id="p1EOpZCbmYOeVOzBPVLL" name="Page-1">
+        <mxGraphModel dx="1118" dy="833" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" background="#1A1A1A" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="3. embedding = embed(prompt)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=source code pro;" edge="1" parent="1" source="7" target="10">
+                    <mxGeometry x="-0.1351" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="3" value="4. uids = get_neighbours(embedding)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=source code pro;" edge="1" parent="1" source="7" target="11">
+                    <mxGeometry x="-0.2174" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="2590" y="1110"/>
+                            <mxPoint x="2590" y="1200"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="4" value="5. data = get_raw_data(uids)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=source code pro;" edge="1" parent="1" source="7" target="12">
+                    <mxGeometry x="0.4386" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="2590" y="1110"/>
+                            <mxPoint x="2590" y="1310"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="5" value="&lt;div&gt;&lt;br&gt;&lt;/div&gt;7. response = ask(prompt, data, context)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=source code pro;" edge="1" parent="1" source="7" target="17">
+                    <mxGeometry x="0.6154" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="6" value="2. save(thread_id, message)&lt;div&gt;6. context = get_context (thread_id)&lt;/div&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=source code pro;" edge="1" parent="1" source="7" target="18">
+                    <mxGeometry x="-0.0667" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="7" value="rest-api" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2470" y="1070" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="8" value="1. response = send(thread_id, message)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=source code pro;" edge="1" parent="1" source="9" target="7">
+                    <mxGeometry x="-0.2308" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="9" value="react-app" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2028" y="1070" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="10" value="embedding-llm" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2920" y="1070" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="11" value="embeddings-vector-db" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2920" y="1160" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="12" value="embeddings-rds-db" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2920" y="1270" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="13" value="[uid]" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2580" y="1160" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="14" value="(e&lt;sub&gt;1&lt;/sub&gt;, ..., e&lt;sub&gt;1536&lt;/sub&gt;)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2750" y="1160" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="15" value="&quot;large ... str&quot;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2270" y="1070" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="16" value="[&lt;div&gt;&amp;nbsp; &amp;nbsp;&quot;this is a related ... long str&quot;,&lt;/div&gt;&lt;div&gt;&amp;nbsp; &amp;nbsp;&quot;this is an even more related .. str&quot;&lt;/div&gt;&lt;div&gt;]&lt;/div&gt;" style="text;html=1;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2610" y="1240" width="300" height="50" as="geometry"/>
+                </mxCell>
+                <mxCell id="17" value="chat-llm" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2470" y="1410" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="18" value="chat-rds-db" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2470" y="840" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="19" value="&quot;this is the response ... str&quot;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="2050" y="1155" width="220" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="20" value="thread" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="2584" y="845" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=none;endFill=0;" edge="1" parent="1" source="23" target="24">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=none;endFill=0;" edge="1" parent="1" source="23" target="25">
+                    <mxGeometry relative="1" as="geometry"/>
+                </mxCell>
+                <mxCell id="23" value="message" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="2584" y="885" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="24" value="content" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="2744" y="865" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="25" value="response" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="2744" y="905" width="120" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="26" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=none;endFill=0;" edge="1" parent="1" source="18" target="23">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="2706" y="952" as="sourcePoint"/>
+                        <mxPoint x="2746" y="932" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="2563" y="880"/>
+                            <mxPoint x="2563" y="900"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="27" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;dashed=1;endArrow=none;endFill=0;" edge="1" parent="1" source="18" target="20">
+                    <mxGeometry relative="1" as="geometry">
+                        <mxPoint x="2706" y="952" as="sourcePoint"/>
+                        <mxPoint x="2746" y="972" as="targetPoint"/>
+                        <Array as="points">
+                            <mxPoint x="2563" y="880"/>
+                            <mxPoint x="2563" y="860"/>
+                        </Array>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="28" value="1. embedding = embed(note)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontFamily=source code pro;" edge="1" parent="1" source="31" target="32">
+                    <mxGeometry x="0.2885" relative="1" as="geometry">
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="29" value="3. uid = save(embedding)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=source code pro;" edge="1" parent="1" source="31" target="33">
+                    <mxGeometry x="0.2609" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="3517" y="910"/>
+                            <mxPoint x="3517" y="1000"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="30" value="4. save(uid, note)" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontFamily=source code pro;" edge="1" parent="1" source="31" target="34">
+                    <mxGeometry x="0.5211" relative="1" as="geometry">
+                        <Array as="points">
+                            <mxPoint x="3517" y="910"/>
+                            <mxPoint x="3517" y="1110"/>
+                        </Array>
+                        <mxPoint as="offset"/>
+                    </mxGeometry>
+                </mxCell>
+                <mxCell id="31" value="rest-api" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3317" y="870" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="32" value="embedding-llm" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3907" y="870" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="33" value="vector-db" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3907" y="960" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="34" value="rds-db" style="ellipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3907" y="1070" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="35" value="(e&lt;sub&gt;1&lt;/sub&gt;, ..., e&lt;sub&gt;1536&lt;/sub&gt;)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3587" y="870" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="36" value="{uid, note}" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3997" y="1095" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="37" value="&quot;large ... str&quot;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3737" y="870" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="38" value="(e&lt;sub&gt;1&lt;/sub&gt;, ..., e&lt;sub&gt;1536&lt;/sub&gt;)" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#00CC00;fontFamily=source code pro;" vertex="1" parent="1">
+                    <mxGeometry x="3997" y="990" width="160" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="40" value="Chat" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FF00FF;fontFamily=source code pro;fontSize=20;" vertex="1" parent="1">
+                    <mxGeometry x="2028" y="778" width="60" height="30" as="geometry"/>
+                </mxCell>
+                <mxCell id="41" value="Embed" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontColor=#FF00FF;fontFamily=source code pro;fontSize=20;" vertex="1" parent="1">
+                    <mxGeometry x="3284" y="778" width="60" height="30" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
