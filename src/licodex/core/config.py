@@ -1,8 +1,10 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, AliasChoices
+from pydantic import Field, AliasChoices, SecretStr
 from functools import lru_cache
 from typing import Optional
 
+# LOCAL_modelhub=nn-ai-marketplace
+# LOCAL_modelhub_base_url=https://api.marketplace.novo-genai.com/v1
 
 class Settings(BaseSettings):
     # API
@@ -23,6 +25,30 @@ class Settings(BaseSettings):
 
     # Optional full URL override (if set this wins)
     database_url: Optional[str] = None  # expects async driver form if provided
+
+    # External model / AI marketplace configuration
+    # The API key intentionally has no default and should only come from the environment (.env)
+    modelhub_api_key: SecretStr | None = Field(
+        default=None,
+        validation_alias=AliasChoices("MODELHUB_API_KEY"),
+        description="Secret API key for external AI marketplace provider",
+    )
+    modelhub_base_url: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("MODELHUB_BASE_URL"),
+        description="Base URL for model provider / marketplace",
+    )
+    modelhub: str | None = Field(
+        default=None,
+        validation_alias=AliasChoices("MODELHUB"),
+        description="Logical model provider identifier",
+    )
+    # Default model names / identifiers
+    chat_completion_model: str = Field(
+        default="openai_gpt4o_128k",
+        validation_alias=AliasChoices("CHAT_COMPLETION_MODEL"),
+        description="Default model identifier used for chat completion endpoints when a model isn't explicitly supplied.",
+    )
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # Derived / convenience
