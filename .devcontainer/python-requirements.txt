@@ -1,2 +1,4 @@
 -r ../src/licodex/python-requirements.txt
 -r ../tests/python-requirements.txt
+
+debugpy==1.8.1

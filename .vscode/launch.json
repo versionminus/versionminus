@@ -1,82 +1,29 @@
 {
+    "version": "0.2.0",
     "configurations": [
         {
-            "name": "[s3]ls",
-            "type": "python",
+            "name": "api",
+            "type": "debugpy",
             "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/s3/ls.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[etcd]ls --keys",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/etcd/ls.py",
-            "console": "integratedTerminal",
+            "module": "uvicorn",
+            "cwd": "${workspaceFolder}",
             "args": [
-                "--keys"
-            ]
-        },
-        {
-            "name": "[etcd]ls --values",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/etcd/ls.py",
-            "console": "integratedTerminal",
-            "args": [
-                "--values"
-            ]
-        },
-
-        {
-            "name": "[milvus]write",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/write.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]write.bulk",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/write_bulk.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]read",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/read.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]collection.ls",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/collection/ls.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]collection.describe",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/collection/describe.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]collection.rm",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/collection/rm.py",
-            "console": "integratedTerminal"
-        },
-        {
-            "name": "[milvus]collection.create",
-            "type": "python",
-            "request": "launch",
-            "program": "${workspaceFolder}/devtools/debug/milvus/collection/create.py",
+                "licodex.api.main:app",
+                "--host", "0.0.0.0",
+                "--port", "8000",
+                "--reload"
+            ],
+            "env": {
+                "LOG_LEVEL": "DEBUG",
+                "DB_HOST": "db",
+                "DB_PORT": "5432",
+                "DB_USER": "licodex",
+                "DB_PASSWORD": "licodexpwd",
+                "DB_NAME": "licodex"
+            },
+            "jinja": true,
+            "justMyCode": true,
             "console": "integratedTerminal"
         }
-    ],
-    "version": "0.2.0"
+    ]
 }

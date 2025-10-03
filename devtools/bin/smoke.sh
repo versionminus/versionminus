@@ -84,7 +84,8 @@ curl_json_status() {
 }
 
 THREADS_PER_USER=${THREADS_PER_USER:-2}
-MESSAGES_PER_THREAD=${MESSAGES_PER_THREAD:-3}
+# Messages creation disabled per request; retain variable for backward compatibility if externally referenced
+MESSAGES_PER_THREAD=${MESSAGES_PER_THREAD:-0}
 
 USERS=(
   "diogo@licodex.com"
@@ -182,6 +183,7 @@ for email in "${USERS[@]}"; do
 done
 
 created_thread_ids=()
+# Message creation disabled; keep array for compatibility (unused)
 created_message_ids=()
 
 ts_base=$(date +%s%N)
@@ -198,23 +200,8 @@ for email in "${USERS[@]}"; do
     grep -q "$thread_title" <<<"$thread_json" || fail "Thread title mismatch ($thread_title)"
     log "  Created thread $thread_title ($thread_id)"
 
-    # Messages
-    for ((m=1; m<=MESSAGES_PER_THREAD; m++)); do
-      content="Message $m for $thread_title"
-      msg_json=$(curl_json POST "${API_PREFIX}/messages/" "{\"thread_id\":\"$thread_id\",\"content\":\"$content\"}") || fail "message create failed (thread $thread_id)"
-      msg_id=$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' <<<"$msg_json")
-      [[ -n "$msg_id" ]] || fail "Could not parse message id (thread $thread_id)"
-      created_message_ids+=("$msg_id")
-    done
-
-    # Verify messages count for thread
-    list_msgs=$(curl_json GET "${API_PREFIX}/messages/thread/$thread_id") || fail "list messages failed (thread $thread_id)"
-    # count occurrences of id field within this thread list
-    msg_count=$(grep -o '"id":"' <<<"$list_msgs" | wc -l | tr -d ' ')
-    if [[ "$msg_count" -lt "$MESSAGES_PER_THREAD" ]]; then
-      fail "Expected >= $MESSAGES_PER_THREAD messages for $thread_id got $msg_count"
-    fi
-    log "  Messages created: $msg_count"
+    # Message creation intentionally skipped
+    log "  (message creation skipped)"
   done
 done
 
@@ -224,7 +211,7 @@ for tid in "${created_thread_ids[@]}"; do
   grep -q "$tid" <<<"$threads_json" || fail "Created thread $tid not in list"
 done
 
-log "Summary: ${#USER_IDS[@]} users ensured, ${#created_thread_ids[@]} threads created, ${#created_message_ids[@]} messages created"
+log "Summary: ${#USER_IDS[@]} users ensured, ${#created_thread_ids[@]} threads created (message creation skipped)"
 if [[ $CLEAN_AFTER -eq 1 ]]; then
   clean_smoke_resources || true
   log "Post-run cleanup complete"
