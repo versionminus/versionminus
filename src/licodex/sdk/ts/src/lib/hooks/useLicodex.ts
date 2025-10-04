@@ -51,6 +51,19 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       const data = await client.listNotes();
       setNotes({ loading: false, data });
     } catch (e) {
+      // If the backend responds 404 OR returns an empty array-like body, treat as empty list.
+      const status = (e as any)?.response?.status;
+      if (status === 404) {
+        setNotes({ loading: false, data: [] });
+        return;
+      }
+      // Some FastAPI setups may 500 when table empty (misconfigured). As a defensive fallback,
+      // if error payload hints at 'not found' or 'no rows' we also return empty silently.
+      const msg = (e as any)?.response?.data?.detail || (e as any)?.message || '';
+      if (/not\s*found|no\s*notes|no\s*rows/i.test(String(msg))) {
+        setNotes({ loading: false, data: [] });
+        return;
+      }
       setNotes({ loading: false, error: e as Error });
     }
   }, [client]);

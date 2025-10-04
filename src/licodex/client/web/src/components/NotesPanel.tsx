@@ -31,7 +31,10 @@ export function NotesPanel({ notesState, selected, onSelect, onCreate, onUpdate,
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 8, overflow: 'hidden' }}>
             <div className="note-list scrollbar-thin" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {notesState.loading && <div className="fade-text">loading notes...</div>}
-              {notesState.error && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>}
+              {/* Only show the error if we actually have some existing notes data. If there are none, treat as normal empty state. */}
+              {notesState.error && (notesState.data?.length || 0) > 0 && (
+                <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>
+              )}
               {notesState.data?.map(n => (
                 <div
                   key={n.id}

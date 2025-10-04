@@ -10,3 +10,4 @@ This repository contains a live coding exercise for building a GenAI powered not
 - verify that all router methods follow the pattern: schema -> router -> service -> repo -> model
 - implement soft deletes in all models
 - implement garbage collector for soft deleted items
+- style all components in css files ONLY

@@ -105,7 +105,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
           <div className="chat-prompt">
             <input
               className="input prompt-input"
-              placeholder={selectedNote ? `Ask about: ${selectedNote.title}` : 'Ask a question...'}
+              placeholder='Ask a question...'
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
