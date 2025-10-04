@@ -1,28 +1,28 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 // Import from package root; deep path '@licodex/sdk/lib/hooks/useLicodex' does not exist in published package.
-import type { UseLicodexReturn, Note } from '@licodex/sdk';
+import type { UseLicodexReturn, Note, Message } from '@licodex/sdk';
 
 interface ChatLine { role: 'user' | 'assistant'; content: string; ts: number; }
 
-interface Props { licodex: UseLicodexReturn; selectedNote: Note | null }
+interface Props { licodex: UseLicodexReturn; selectedNote: Note | null; selectedThreadId: string | null }
 
-export function ChatPanel({ licodex, selectedNote }: Props) {
+export function ChatPanel({ licodex, selectedNote, selectedThreadId }: Props) {
   const [input, setInput] = useState('');
-  const [history, setHistory] = useState<ChatLine[]>([]);
+  // Local optimistic lines for instant UX before reload (persisted history comes from licodex.messages)
+  const [localPending, setLocalPending] = useState<ChatLine[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
-
-  const append = useCallback((line: ChatLine) => setHistory(h => [...h, line]), []);
+  const appendLocal = useCallback((line: ChatLine) => setLocalPending(h => [...h, line]), []);
 
   const send = useCallback(async () => {
-    if (!input.trim()) return;
+    if (!input.trim() || !selectedThreadId) return;
     const q = input.trim();
-    append({ role: 'user', content: q, ts: Date.now() });
+    appendLocal({ role: 'user', content: q, ts: Date.now() });
     setInput('');
-    const answer = await licodex.ask({ question: q, noteIds: selectedNote ? [selectedNote.id] : undefined });
-    if (answer) {
-      append({ role: 'assistant', content: answer.answer, ts: Date.now() });
-    }
-  }, [append, input, licodex, selectedNote]);
+    // Use stateful chat endpoint (stores assistant response). Notes not yet integrated in retrieval.
+    await licodex.sendChatMessage(selectedThreadId, q);
+    // After sendChatMessage, licodex.loadMessages should have been called; clear local pending after short delay.
+    setTimeout(() => setLocalPending([]), 200);
+  }, [appendLocal, input, licodex, selectedThreadId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); });
 
@@ -35,23 +35,31 @@ export function ChatPanel({ licodex, selectedNote }: Props) {
         <span style={{ opacity: .7 }}>licodex / chat</span>
       </div>
       <div className="chat-history scrollbar-thin">
-        {history.map(l => (
-          <div key={l.ts} className={l.role === 'user' ? 'chat-line-user' : 'chat-line-bot'}>
-            {l.role === 'user' ? 'you > ' : 'licodex > '}{l.content}
+        {/* Persisted messages from backend */}
+        {licodex.messages.data?.map((m: Message) => (
+          <div key={m.id + m.response}>
+            <div className='chat-line-user'>you &gt; {m.content}</div>
+            {m.response && <div className='chat-line-bot'>licodex &gt; {m.response}</div>}
           </div>
         ))}
-        {licodex.asking && <div className="chat-line-bot fade-text">thinking...</div>}
+        {/* Optimistic local lines not yet persisted */}
+        {localPending.map(l => (
+          <div key={l.ts} className={l.role === 'user' ? 'chat-line-user' : 'chat-line-bot'}>
+            {l.role === 'user' ? 'you \u003e ' : 'licodex \u003e '}{l.content}
+          </div>
+        ))}
+        {licodex.messages.loading && <div className="chat-line-bot fade-text">loading...</div>}
         <div ref={bottomRef} />
       </div>
       <div className="chat-prompt">
         <input
           className="input prompt-input"
-          placeholder={selectedNote ? `Ask about: ${selectedNote.title}` : 'Ask a question...'}
+          placeholder={!selectedThreadId ? 'Select or create a thread first' : selectedNote ? `Ask about: ${selectedNote.title}` : 'Ask a question...'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void send(); } }}
+          onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
         />
-        <button className="btn primary" onClick={() => void send()} disabled={!input.trim() || licodex.asking}>Send</button>
+        <button className="btn primary" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}>Send</button>
       </div>
     </div>
   );

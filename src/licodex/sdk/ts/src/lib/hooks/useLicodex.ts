@@ -28,6 +28,7 @@ export interface UseLicodexReturn {
   messages: AsyncState<Message[]>;
   loadMessages: (threadId: string) => void;
   createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
+  sendChatMessage: (threadId: string, content: string) => Promise<Message | undefined>;
 }
 
 export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
@@ -124,6 +125,17 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
 
+  // chat/send -> creates message and assistant response in one call
+  const sendChatMessage = useCallback(async (threadId: string, content: string) => {
+    try {
+      const resp = await client.chatSend({ thread_id: threadId, content });
+      // After sending, refresh messages for that thread so UI reflects persisted history
+      await loadMessages(threadId);
+      // Return a Message-shaped object (message_id maps to id) for convenience
+      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response } as Message;
+    } catch (e) { console.error(e); }
+  }, [client, loadMessages]);
+
   const updateNote = useCallback(
     async (id: string, input: Partial<NoteInput>) => {
       try {
@@ -186,7 +198,8 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       messages,
       loadMessages,
       createMessage,
+      sendChatMessage,
     }),
-    [answer, ask, asking, client, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage]
+    [answer, ask, asking, client, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage]
   );
 }

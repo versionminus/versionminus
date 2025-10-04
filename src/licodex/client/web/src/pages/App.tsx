@@ -62,7 +62,7 @@ export function App() {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="chat-panel" style={{ flex: 1 }}>
-          <ChatPanel licodex={licodex} selectedNote={selectedNote} />
+          <ChatPanel licodex={licodex} selectedNote={selectedNote} selectedThreadId={selectedThreadId} />
         </div>
         <div className="side-panel" style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border)', height: 320 }}>
           <NotesPanel

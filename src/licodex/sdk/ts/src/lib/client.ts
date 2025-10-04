@@ -1,8 +1,12 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput } from './types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse } from './types';
 
 export const DEFAULT_BASE_URL = 'http://licodex-api:8000';
+export const VERSION="1.0.0";
 
+// Server FastAPI settings.api_prefix is "/api/v1". We expect callers to pass a baseUrl
+// that already includes the leading /api (e.g. baseUrl="/api" in the browser) so we
+// append only the version segment here for consistency across environments.
 const API_PREFIX = '/v1';
 
 export class LicodexClient {
@@ -49,15 +53,15 @@ export class LicodexClient {
             const cfg = (error.config || {}) as { baseURL?: string; url?: string; method?: string };
             const url = (cfg.baseURL || '') + (cfg.url || '');
             if (error.response) {
-              logger.error?.('[Licodex SDK] ✕', error.response.status, cfg.method?.toUpperCase(), url, {
+              logger.error?.(`[Licodex SDK ${VERSION}] ✕`, error.response.status, cfg.method?.toUpperCase(), url, {
                 data: error.response.data,
               });
             } else if (error.request) {
-              logger.error?.('[Licodex SDK] ✕ NO_RESPONSE', cfg.method?.toUpperCase(), url, {
+              logger.error?.(`[Licodex SDK ${VERSION}] ✕ NO_RESPONSE`, cfg.method?.toUpperCase(), url, {
                 message: error.message,
               });
             } else {
-              logger.error?.('[Licodex SDK] ✕ REQUEST_SETUP', { message: error.message });
+              logger.error?.(`[Licodex SDK ${VERSION}] ✕ REQUEST_SETUP`, { message: error.message });
             }
           } catch { /* ignore logging errors */ }
           return Promise.reject(error);
@@ -101,8 +105,30 @@ export class LicodexClient {
 
   // Questions (RAG)
   async ask(request: QuestionRequest): Promise<QuestionAnswer> {
-    const { data } = await this.axios.post(`${API_PREFIX}/notes/ask`, request);
-    return data;
+    // Temporary mapping: backend does not yet implement a dedicated RAG endpoint.
+    // We call the stateless /chat/completions route with a single user message.
+    // "noteIds" (if provided) are not yet used server-side; future enhancement
+    // can fetch note content and prepend as system/context messages.
+    const payload = {
+      messages: [
+        { role: 'user', content: request.question }
+      ],
+      // model omitted -> backend injects default; temperature left default
+    };
+    const { data } = await this.axios.post(`${API_PREFIX}/chat/completions`, payload);
+    const answer: string = data?.choices?.[0]?.message?.content ?? '';
+    return {
+      answer,
+      sources: [], // No retrieval yet; placeholder to satisfy interface
+      latencyMs: undefined,
+    };
+  }
+
+  // Stateful chat (thread-based)
+  async chatSend(req: ChatSendRequest): Promise<ChatSendResponse> {
+    // The backend expects snake_case keys already aligned with our interface.
+    const { data } = await this.axios.post(`${API_PREFIX}/chat/send`, req);
+    return data as ChatSendResponse;
   }
 
   // Threads

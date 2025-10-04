@@ -68,6 +68,23 @@ export interface MessageInput {
   response?: string;
 }
 
+// Stateful chat send (user message -> assistant reply persisted) ---------------------------------
+export interface ChatSendRequest {
+  thread_id: string; // UUID of existing thread
+  content: string;   // user prompt
+  model?: string;    // optional (backend will inject default)
+  temperature?: number; // optional (defaults server-side)
+}
+
+export interface ChatSendResponse {
+  thread_id: string;
+  message_id: string;
+  content: string;      // echoed user content
+  response: string;     // assistant reply
+  model: string;        // resolved model
+  usage: Record<string, any>; // coarse metrics (message counts etc.)
+}
+
 export interface Paginated<T> {
   items: T[];
   total: number;
