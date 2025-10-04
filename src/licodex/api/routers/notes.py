@@ -25,7 +25,7 @@ router = APIRouter(prefix="/notes", tags=["notes"])
 async def create_note_route(
     payload: NoteCreate, session: AsyncSession = Depends(deps.get_db)
 ):
-    note = await create_note(session, user_id=payload.user_id, title=payload.title, content=payload.content)
+    note = await create_note(session, user_id=payload.user_id, content=payload.content)
     await session.commit()
     return note  # type: ignore
 
@@ -65,7 +65,6 @@ async def update_note_route(
         note = await update_note(
             session,
             note_id,
-            title=payload.title,
             content=payload.content,
             embedded=payload.embedded,
             status=payload.status,

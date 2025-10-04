@@ -19,6 +19,10 @@ services:
       timeout: 5s
       retries: 10
 
+  # MODELHUB_API_KEY=paste \\
+  # MODELHUB_BASE_URL=paste \\
+  # MODELHUB=paste \\
+  # docker compose up -d api
   api:
     build:
       context: .
@@ -31,6 +35,21 @@ services:
         condition: service_healthy
     ports:
       - "8000:8000"
+    environment:
+      - MODELHUB_API_KEY
+      - MODELHUB_BASE_URL
+      - MODELHUB
+  web:
+    build:
+      context: .
+      dockerfile: src/licodex/client/web/Dockerfile
+    image: licodex-web:1.0.0
+    container_name: licodex-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
 volumes:
   licodex-db-data:
     name: licodex-db-data

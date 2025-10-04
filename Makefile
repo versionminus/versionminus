@@ -22,6 +22,14 @@ build-db:
 up:
 	docker compose up -d
 
+up-db:
+	docker compose up -d db
+
+
+#  make up-api MODELHUB_API_KEY=sk-xxx MODELHUB_BASE_URL=https://api.example.com/v1 MODELHUB=provider
+up-api:
+	MODELHUB_API_KEY='$(MODELHUB_API_KEY)' MODELHUB_BASE_URL='$(MODELHUB_BASE_URL)' MODELHUB='$(MODELHUB)' docker compose up -d api
+
 down-api:
 	docker compose down -v api
 
