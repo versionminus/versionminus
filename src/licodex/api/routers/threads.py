@@ -12,6 +12,7 @@ from licodex.services.thread import (
     list_message_counts,
     list_messages_per_thread,
 )
+from licodex.api.routers import messages as message_router
 
 router = APIRouter(prefix="/threads", tags=["threads"])
 
@@ -78,6 +79,13 @@ async def delete_thread_route(thread_id: uuid.UUID, session: AsyncSession = Depe
         thread = await get_thread_or_404(session, thread_id)
     except ThreadNotFoundError:
         raise HTTPException(status_code=404, detail="Thread not found")
+    # Cascade delete: reuse the message router's delete logic for each message in the thread.
+    rows = await list_messages_per_thread(session, thread_id=thread_id)
+    if rows:
+        # rows[0] -> (Thread, [Message, ...]) because we filtered by thread_id
+        for msg in rows[0][1]:
+            # Call the message router's delete endpoint directly, passing the active session.
+            await message_router.delete_message_route(msg.id, session)  # type: ignore[arg-type]
     await session.delete(thread)
     await session.commit()
     return None

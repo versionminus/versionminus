@@ -62,7 +62,12 @@ export function App() {
       </div>
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div className="chat-panel" style={{ flex: 1 }}>
-          <ChatPanel licodex={licodex} selectedNote={selectedNote} selectedThreadId={selectedThreadId} />
+          <ChatPanel
+            licodex={licodex}
+            selectedNote={selectedNote}
+            selectedThreadId={selectedThreadId}
+            onThreadDeleted={(id) => { if (selectedThreadId === id) setSelectedThreadId(null); }}
+          />
         </div>
         <div className="side-panel" style={{ display: 'flex', flexDirection: 'column', borderTop: '1px solid var(--border)', height: 320 }}>
           <NotesPanel

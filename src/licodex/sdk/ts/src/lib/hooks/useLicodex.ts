@@ -102,6 +102,13 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     try {
       await client.deleteThread(id);
       await loadThreads();
+      // If messages currently loaded belong to this thread, clear them so UI does not show stale history.
+      setMessages((m: AsyncState<Message[]>) => {
+        if (m.data && m.data.length > 0 && m.data[0] && m.data[0].thread_id === id) {
+            return { loading: false, data: [] };
+        }
+        return m;
+      });
       return id;
     } catch (e) { console.error(e); }
   }, [client, loadThreads]);

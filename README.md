@@ -7,3 +7,4 @@ This repository contains a live coding exercise for building a GenAI powered not
 # TODOs
 
 - meaningful errors, e.g.: no user found on new note creation
+- verify that all router methods follow the pattern: schema -> router -> service -> repo -> model
