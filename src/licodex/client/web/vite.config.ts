@@ -11,13 +11,10 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: {
-      // Allow the frontend to call the API at the same-origin /api/* which forwards
-      // to the internal docker network hostname licodex-api.
+      // Forward /api/* to backend without stripping so backend still sees /api/v1/... path.
       '/api': {
         target: 'http://licodex-api:8000',
-        changeOrigin: true,
-        // Strip nothing; API expected to receive /notes etc with /api prefix removed.
-        rewrite: (path) => path.replace(/^\/api/, '')
+        changeOrigin: true
       }
     }
   },

@@ -1,7 +1,22 @@
+export interface LicodexLogger {
+  debug?: (...args: any[]) => void;
+  info?: (...args: any[]) => void;
+  warn?: (...args: any[]) => void;
+  error?: (...args: any[]) => void;
+}
+
 export interface LicodexConfig {
   baseUrl?: string; // optional; SDK supplies default
   apiKey?: string; // optional bearer token or api key
   timeoutMs?: number;
+  /**
+   * Provide a custom logger (console-compatible). If omitted, console will be used.
+   */
+  logger?: LicodexLogger;
+  /**
+   * Whether to log HTTP request attempts & results (default: true). Set false to silence.
+   */
+  logRequests?: boolean;
 }
 
 export interface NoteInput {

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput } from './types';
 
 export const DEFAULT_BASE_URL = 'http://licodex-api:8000';
@@ -10,11 +10,60 @@ export class LicodexClient {
 
   constructor(private config: LicodexConfig) {
     const baseUrl = (config.baseUrl || DEFAULT_BASE_URL).replace(/\/$/, '');
+    const logger = config.logger ?? console;
+    const logRequests = config.logRequests !== false; // default true
+
     this.axios = axios.create({
       baseURL: baseUrl,
       timeout: config.timeoutMs ?? 60000,
       headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : undefined,
     });
+
+    if (logRequests) {
+      this.axios.interceptors.request.use((req) => {
+        try {
+          const method = (req.method || 'GET').toUpperCase();
+          const url = (req.baseURL || '') + (req.url || '');
+          logger.info?.('[Licodex SDK] →', method, url, {
+            params: req.params,
+            data: req.data,
+            timeout: req.timeout,
+          });
+        } catch { /* ignore logging errors */ }
+        return req;
+      });
+
+      this.axios.interceptors.response.use(
+        (res) => {
+          try {
+            const method = (res.config.method || 'GET').toUpperCase();
+            const url = (res.config.baseURL || '') + (res.config.url || '');
+            logger.info?.('[Licodex SDK] ←', res.status, method, url, {
+              durationMs: (res as any).config?.metadata?.durationMs,
+            });
+          } catch { /* ignore logging errors */ }
+          return res;
+        },
+        (error: AxiosError) => {
+          try {
+            const cfg = (error.config || {}) as { baseURL?: string; url?: string; method?: string };
+            const url = (cfg.baseURL || '') + (cfg.url || '');
+            if (error.response) {
+              logger.error?.('[Licodex SDK] ✕', error.response.status, cfg.method?.toUpperCase(), url, {
+                data: error.response.data,
+              });
+            } else if (error.request) {
+              logger.error?.('[Licodex SDK] ✕ NO_RESPONSE', cfg.method?.toUpperCase(), url, {
+                message: error.message,
+              });
+            } else {
+              logger.error?.('[Licodex SDK] ✕ REQUEST_SETUP', { message: error.message });
+            }
+          } catch { /* ignore logging errors */ }
+          return Promise.reject(error);
+        }
+      );
+    }
   }
 
   setApiKey(apiKey?: string) {
