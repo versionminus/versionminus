@@ -89,9 +89,11 @@ button { font-family: inherit; }
 
 /* Full screen note editor */
 .note-fullscreen-container { position:relative; flex:1; display:flex; flex-direction:column; }
-.note-fullscreen-editor { flex:1; display:flex; flex-direction:column; padding:16px; }
-.note-fullscreen-editor textarea { flex:1; resize:none; background:var(--bg-tertiary); border:1px solid var(--border); color:var(--text-primary); font-size:inherit; line-height:1.5; padding:12px; border-radius:6px; }
-.note-fullscreen-bar { height:40px; display:flex; align-items:center; gap:8px; padding:4px 8px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,#161b22,#0d1117); }
+.note-fullscreen-editor { flex:1; display:flex; flex-direction:column; padding:0; /* Remove padding so editor occupies full space */ }
+/* Make textarea occupy full area without extra chrome */
+.note-fullscreen-editor textarea { flex:1; resize:none; background:var(--bg-tertiary); border:none; color:var(--text-primary); font-size:inherit; line-height:1.5; padding:12px; border-radius:0; }
+/* Align note editor top bar height with other panel titlebars by removing fixed height */
+.note-fullscreen-bar { display:flex; align-items:center; gap:8px; padding:4px 8px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,#161b22,#0d1117); }
 
 /* Empty state animation */
 @keyframes floatFade { 0% { transform:translateY(0); opacity:.6;} 50% { transform:translateY(-8px); opacity:1;} 100% { transform:translateY(0); opacity:.6;} }
