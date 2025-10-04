@@ -37,7 +37,12 @@ async def create(
 ) -> Note:
     note = Note(content=content, user_id=user_id, **({"id": id} if id else {}))
     session.add(note)
+    # Flush so INSERT is issued and server defaults (timestamps, etc.) are populated,
+    # then refresh to eagerly load them. Without this, accessing attributes like
+    # updated_at during Pydantic serialization can trigger a lazy load which in
+    # async SQLAlchemy raises MissingGreenlet.
     await session.flush()
+    await session.refresh(note)
     return note
 
 
@@ -59,10 +64,12 @@ async def update(
     if embedded_at is not None:
         note.embedded_at = embedded_at
     await session.flush()
+    await session.refresh(note)
     return note
 
 
 async def soft_delete(session: AsyncSession, note: Note) -> Note:
     note.status = NoteStatus.DELETED
     await session.flush()
+    await session.refresh(note)
     return note
