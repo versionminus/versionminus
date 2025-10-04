@@ -41,8 +41,8 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
           {editingId && editingId !== 'new' && <button className="btn danger" title="Delete" onClick={() => { void onDelete(editingId); cancel(); }}><Icon name="trash" /></button>}
         </div>
       </div>
-      <div className="panel-body">
-        <div className="scrollbar-thin scroll-flex-col">
+      <div className="panel-body" style={{ padding: 0 }}>
+        <div className="scrollbar-thin scroll-flex-col" style={{ gap: 0 }}>
           {loading && <div className="fade-text">loading threads...</div>}
             {error && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading threads</div>}
           {threads?.map(t => (
@@ -51,6 +51,7 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
               className={`note-item thread-item ${selected === t.id ? 'active' : ''}`}
               onClick={() => onSelect(t)}
               onDoubleClick={() => startRename(t)}
+              title={t.title || 'Untitled thread'}
             >
               <div className="note-title">{t.title || 'Untitled thread'}</div>
             </div>
