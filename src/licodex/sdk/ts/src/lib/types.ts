@@ -113,7 +113,7 @@ export interface User {
 
 // A default / fallback user id for demo contexts where auth is not yet wired.
 // This is intentionally exported so consuming apps can rely on a single value.
-export const DEFAULT_USER_ID = 'e1bee915-79b0-4043-b063-ac6f72ae7448';
+export const DEFAULT_USER_ID = 'ad66a062-fda4-41e5-8d4e-f260965dc4f4';
 
 // Re-exported internal helper state shapes for consumer convenience
 export interface AsyncState<T> {
