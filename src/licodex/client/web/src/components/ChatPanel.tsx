@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Icon } from './Icon';
 // Import from package root; deep path '@licodex/sdk/lib/hooks/useLicodex' does not exist in published package.
 import type { UseLicodexReturn, Note, Message } from '@licodex/sdk';
 
@@ -71,16 +72,15 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
         <span style={{ opacity: .7, flex: 1 }}>{thread?.title || 'chat'}</span>
         {thread && (
           <div style={{ display: 'flex', gap: 6 }}>
-            <button className="btn" style={{ padding: '2px 6px', fontSize: 11 }} onClick={() => void renameThread()}>rename</button>
-            <button className="btn" style={{ padding: '2px 6px', fontSize: 11 }} disabled={resetting || licodex.messages.loading} onClick={() => void resetThread()}>{resetting ? 'resetting...' : 'reset'}</button>
-            <button className="btn danger" style={{ padding: '2px 6px', fontSize: 11 }} onClick={() => void deleteThread()}>delete</button>
+            <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" /></button>
+            <button className="btn outline small" title="Reset messages" disabled={resetting || licodex.messages.loading} onClick={() => void resetThread()}><Icon name="refresh" /></button>
+            <button className="btn danger small" title="Delete thread" onClick={() => void deleteThread()}><Icon name="trash" /></button>
           </div>
         )}
       </div>
       {!selectedThreadId && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', opacity: 0.7 }}>
-          <div style={{ fontSize: 14 }}>Select a thread from the left sidebar to start chatting.</div>
-          <div style={{ fontSize: 12, marginTop: 8 }}>Create a new thread to begin a stateful conversation.</div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', padding:32 }}>
+          <div className="empty-state">thought is a world vastly superior that the physical world<small>create a thread or a note to begin</small></div>
         </div>
       )}
       {selectedThreadId && (
@@ -110,7 +110,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
             />
-            <button className="btn primary" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}>Send</button>
+            <button className="btn" title="Send" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}><Icon name="send" /></button>
           </div>
         </>
       )}

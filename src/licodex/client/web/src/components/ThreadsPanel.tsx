@@ -1,4 +1,5 @@
 import React, { useCallback, useState } from 'react';
+import { Icon } from './Icon';
 import type { Thread } from '@licodex/sdk';
 
 interface Props {
@@ -32,20 +33,22 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="terminal-titlebar"><span style={{ opacity: .7 }}>threads</span></div>
-      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflow: 'hidden' }}>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button className="btn primary" onClick={startNew}>+ thread</button>
-          {editingId && <button className="btn" onClick={cancel}>cancel</button>}
-          {editingId && editingId !== 'new' && <button className="btn danger" onClick={() => { void onDelete(editingId); cancel(); }}>delete</button>}
+      <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ opacity: .7 }}>threads</span>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+          <button className="btn" title="New thread" onClick={startNew}><Icon name="plus" /></button>
+          {editingId && <button className="btn outline" title="Cancel" onClick={cancel}><Icon name="x" /></button>}
+          {editingId && editingId !== 'new' && <button className="btn danger" title="Delete" onClick={() => { void onDelete(editingId); cancel(); }}><Icon name="trash" /></button>}
         </div>
+      </div>
+      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflow: 'hidden' }}>
         <div className="scrollbar-thin" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
           {loading && <div className="fade-text">loading threads...</div>}
             {error && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading threads</div>}
           {threads?.map(t => (
             <div
               key={t.id}
-              className={`note-item ${selected === t.id ? 'active' : ''}`}
+              className={`note-item thread-item ${selected === t.id ? 'active' : ''}`}
               onClick={() => onSelect(t)}
               onDoubleClick={() => startRename(t)}
             >
@@ -65,7 +68,7 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
               autoFocus
               style={{ flex: 1 }}
             />
-            <button className="btn primary" disabled={!draft.trim()} onClick={() => { void save(); }}>save</button>
+            <button className="btn" title="Save" disabled={!draft.trim()} onClick={() => { void save(); }}><Icon name="check" /></button>
           </div>
         )}
       </div>
