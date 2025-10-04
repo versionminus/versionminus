@@ -38,7 +38,7 @@ export function NotesPanel({ notesState, selected, onSelect, onCreate, onUpdate,
                   className={`note-item ${selected === n.id ? 'active' : ''}`}
                   onClick={() => { onSelect(n); startEdit(n); }}
                 >
-                  <div className="note-title">{n.title || 'Untitled'}</div>
+                  <div className="note-title">{(n.content.split('\n')[0] || 'Untitled').slice(0,80)}</div>
                   <div className="note-content-snippet">{n.content.slice(0, 60)}</div>
                 </div>
               ))}

@@ -68,7 +68,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ opacity: .7, flex: 1 }}>{thread?.title || 'licodex / chat'}</span>
+        <span style={{ opacity: .7, flex: 1 }}>{thread?.title || 'chat'}</span>
         {thread && (
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn" style={{ padding: '2px 6px', fontSize: 11 }} onClick={() => void renameThread()}>rename</button>

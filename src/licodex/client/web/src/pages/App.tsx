@@ -24,8 +24,7 @@ export function App() {
 
   const handleCreateNote = useCallback(
     async (content: string) => {
-      const title = content.split('\n')[0].slice(0, 80) || 'Untitled';
-  const note = await licodex.createNote({ content, title, user_id: DEFAULT_USER_ID });
+  const note = await licodex.createNote({ content, user_id: DEFAULT_USER_ID });
       if (note) setSelectedNote(note);
     },
     [licodex]
@@ -33,8 +32,7 @@ export function App() {
 
   const handleUpdateNote = useCallback(
     async (id: string, content: string) => {
-      const title = content.split('\n')[0].slice(0, 80) || 'Untitled';
-      const note = await licodex.updateNote(id, { content, title });
+      const note = await licodex.updateNote(id, { content });
       if (note) setSelectedNote(note);
     },
     [licodex]

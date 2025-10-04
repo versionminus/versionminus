@@ -6,14 +6,12 @@ from licodex.models.note import NoteStatus
 
 
 class NoteCreate(BaseModel):
-    title: str = ""
     content: str = ""
     user_id: uuid.UUID
 
 
 class NoteRead(ORMBase):
     id: uuid.UUID
-    title: str
     content: str
     user_id: uuid.UUID
     created_at: datetime
@@ -24,7 +22,6 @@ class NoteRead(ORMBase):
 
 
 class NoteUpdate(BaseModel):
-    title: str | None = None
     content: str | None = None
     embedded: bool | None = None
     status: NoteStatus | None = None

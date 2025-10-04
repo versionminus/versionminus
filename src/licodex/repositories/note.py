@@ -32,11 +32,10 @@ async def create(
     session: AsyncSession,
     *,
     user_id: uuid.UUID,
-    title: str = "",
     content: str = "",
     id: uuid.UUID | None = None,
 ) -> Note:
-    note = Note(title=title, content=content, user_id=user_id, **({"id": id} if id else {}))
+    note = Note(content=content, user_id=user_id, **({"id": id} if id else {}))
     session.add(note)
     await session.flush()
     return note
@@ -46,14 +45,11 @@ async def update(
     session: AsyncSession,
     note: Note,
     *,
-    title: str | None = None,
     content: str | None = None,
     embedded: bool | None = None,
     status: NoteStatus | None = None,
     embedded_at=None,
 ) -> Note:
-    if title is not None:
-        note.title = title
     if content is not None:
         note.content = content
     if embedded is not None:

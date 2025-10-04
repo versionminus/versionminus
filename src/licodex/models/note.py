@@ -17,7 +17,6 @@ class Note(Base):
     __tablename__ = "note"
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
-    title: Mapped[str] = mapped_column(String(255), default="", index=True)
     content: Mapped[str] = mapped_column(String, default="")
     user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
 

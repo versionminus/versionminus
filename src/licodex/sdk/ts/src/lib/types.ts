@@ -21,7 +21,6 @@ export interface LicodexConfig {
 
 export interface NoteInput {
   id?: string;
-  title?: string;
   content: string;
   // Backend requires user_id (NoteCreate schema). Make explicit here so callers must provide it.
   user_id: string;

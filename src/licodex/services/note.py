@@ -30,11 +30,10 @@ async def create_note(
     session: AsyncSession,
     *,
     user_id: uuid.UUID,
-    title: str = "",
     content: str = "",
     id: uuid.UUID | None = None,
 ) -> Note:
-    note = await note_repo.create(session, user_id=user_id, title=title, content=content, id=id)
+    note = await note_repo.create(session, user_id=user_id, content=content, id=id)
     return note
 
 
@@ -53,7 +52,6 @@ async def update_note(
     session: AsyncSession,
     note_id: uuid.UUID,
     *,
-    title: str | None = None,
     content: str | None = None,
     embedded: bool | None = None,
     status: NoteStatus | None = None,
@@ -63,7 +61,6 @@ async def update_note(
     note = await note_repo.update(
         session,
         note,
-        title=title,
         content=content,
         embedded=embedded,
         status=status,
