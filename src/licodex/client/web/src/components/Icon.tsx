@@ -5,6 +5,9 @@ import {
 
 export type IconName = 'plus' | 'x' | 'trash' | 'edit' | 'check' | 'refresh' | 'threads' | 'note' | 'send';
 
+// Single source of truth for sizing all icon-only buttons.
+export const ICON_SIZE = 14; // px
+
 const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   plus: VscAdd,
   x: VscClose,
@@ -19,7 +22,7 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
 
 interface Props { name: IconName; size?: number; }
 
-export function Icon({ name, size = 16 }: Props) {
+export function Icon({ name, size = ICON_SIZE }: Props) {
   const C = iconMap[name];
   return <C size={size} />;
 }

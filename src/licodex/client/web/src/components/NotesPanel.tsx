@@ -1,6 +1,6 @@
 import React from 'react';
 import type { Note, AsyncState } from '@licodex/sdk';
-import { Icon } from './Icon';
+import { Icon, ICON_SIZE } from './Icon';
 
 interface Props {
   notesState: AsyncState<Note[]>;
@@ -16,7 +16,7 @@ export function NotesPanel({ notesState, selected, onSelect, onNew }: Props) {
       <div className="terminal-titlebar gap-6">
         <span className="muted">notes</span>
         <div className="actions-row">
-          <button className="btn" title="New note" onClick={onNew}><Icon name="plus" /></button>
+          <button className="btn" title="New note" onClick={onNew}><Icon name="plus" size={ICON_SIZE} /></button>
         </div>
       </div>
       <div className="panel-body" style={{ padding: 0 }}>

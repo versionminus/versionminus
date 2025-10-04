@@ -1,6 +1,6 @@
 import React from 'react';
 import { DEFAULT_USER_ID, UseLicodexReturn } from '@licodex/sdk';
-import { Icon } from './Icon';
+import { Icon, ICON_SIZE } from './Icon';
 
 interface Props {
   licodex: UseLicodexReturn;
@@ -21,10 +21,10 @@ export function SystemBar({ licodex, showThreads, showNotes, onToggleThreads, on
       )}
       <div className="sysbar-spacer" />
       <button className={`btn outline small ${showThreads ? '' : 'inactive'}`} title="Toggle threads" onClick={onToggleThreads}>
-        <Icon name="threads" size={16} />
+        <Icon name="threads" size={ICON_SIZE} />
       </button>
       <button className={`btn outline small ${showNotes ? '' : 'inactive'}`} title="Toggle notes" onClick={onToggleNotes}>
-        <Icon name="note" size={16} />
+        <Icon name="note" size={ICON_SIZE} />
       </button>
       <div className="version-text">v1.0.0</div>
     </div>

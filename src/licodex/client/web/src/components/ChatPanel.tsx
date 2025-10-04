@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Icon } from './Icon';
+import { Icon, ICON_SIZE } from './Icon';
 // Import from package root; deep path '@licodex/sdk/lib/hooks/useLicodex' does not exist in published package.
 import type { UseLicodexReturn, Note, Message } from '@licodex/sdk';
 
@@ -74,9 +74,9 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
         <span className="muted-grow">{thread?.title || (selectedNote ? 'note' : '')}</span>
         {thread && (
           <div className="btn-row">
-            <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" /></button>
-            <button className="btn outline small" title="Reset messages" disabled={resetting || licodex.messages.loading} onClick={() => void resetThread()}><Icon name="refresh" /></button>
-            <button className="btn danger small" title="Delete thread" onClick={() => void deleteThread()}><Icon name="trash" /></button>
+            <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" size={ICON_SIZE} /></button>
+            <button className="btn outline small" title="Reset messages" disabled={resetting || licodex.messages.loading} onClick={() => void resetThread()}><Icon name="refresh" size={ICON_SIZE} /></button>
+            <button className="btn danger small" title="Delete thread" onClick={() => void deleteThread()}><Icon name="trash" size={ICON_SIZE} /></button>
           </div>
         )}
       </div>
@@ -107,7 +107,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
             />
-            <button className="btn" title="Send" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}><Icon name="send" /></button>
+            <button className="btn" title="Send" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}><Icon name="send" size={ICON_SIZE} /></button>
           </div>
         </>
       )}

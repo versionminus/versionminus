@@ -32,7 +32,7 @@ body, #root, html { height: 100%; margin: 0; background: var(--bg-primary); colo
 
 button { font-family: inherit; }
 
-.btn { background: var(--accent); border: 1px solid var(--accent-glow); color: var(--accent-fg); padding: 0; width:30px; height:30px; border-radius: 5px; cursor: pointer; font-size: inherit; display: inline-flex; align-items: center; justify-content:center; gap: 0; transition: background .15s, border-color .15s, transform .15s; line-height:1; }
+.btn { background: var(--accent); border: 1px solid var(--accent-glow); color: var(--accent-fg); padding: 0; width:24px; height:24px; border-radius: 5px; cursor: pointer; font-size: inherit; display: inline-flex; align-items: center; justify-content:center; gap: 0; transition: background .15s, border-color .15s, transform .15s; line-height:1; }
 .btn:hover { background: var(--accent-glow); }
 .btn:active { transform: translateY(1px); }
 .btn.primary { background: var(--accent); border-color: var(--accent-glow); }
@@ -41,7 +41,7 @@ button { font-family: inherit; }
 .btn.danger:hover { background: #ff6a61; }
 .btn.outline { background: var(--bg-secondary); color: var(--text-primary); border:1px solid var(--border); }
 .btn.outline:hover { border-color: var(--border-strong); background: var(--bg-tertiary); }
-.btn.small { width:30px; height:30px; }
+.btn.small { width:24px; height:24px; }
 .btn-group { display:flex; gap:6px; }
 
 .input, textarea { background: var(--bg-tertiary); border: 1px solid var(--border); color: var(--text-primary); font-family: inherit; padding: 6px 8px; font-size: inherit; border-radius: var(--radius-sm); width: 100%; }
@@ -106,8 +106,8 @@ button { font-family: inherit; }
 /* Utility */
 .hidden { display:none !important; }
 
-/* Chat tweaks for icon send button */
-.chat-prompt button.btn { width:40px; }
+/* Chat button now uses same size for visual consistency */
+/* .chat-prompt button.btn { } intentionally uniform */
 
 /* Scroll area improvements */
 .chat-history { scrollbar-gutter: stable; }

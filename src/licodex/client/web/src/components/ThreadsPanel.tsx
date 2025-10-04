@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { Icon } from './Icon';
+import { Icon, ICON_SIZE } from './Icon';
 import type { Thread } from '@licodex/sdk';
 
 interface Props {
@@ -36,9 +36,9 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
       <div className="terminal-titlebar gap-6">
         <span className="muted">threads</span>
         <div className="actions-row">
-          <button className="btn" title="New thread" onClick={startNew}><Icon name="plus" /></button>
-          {editingId && <button className="btn outline" title="Cancel" onClick={cancel}><Icon name="x" /></button>}
-          {editingId && editingId !== 'new' && <button className="btn danger" title="Delete" onClick={() => { void onDelete(editingId); cancel(); }}><Icon name="trash" /></button>}
+          <button className="btn" title="New thread" onClick={startNew}><Icon name="plus" size={ICON_SIZE} /></button>
+          {editingId && <button className="btn outline" title="Cancel" onClick={cancel}><Icon name="x" size={ICON_SIZE} /></button>}
+          {editingId && editingId !== 'new' && <button className="btn danger" title="Delete" onClick={() => { void onDelete(editingId); cancel(); }}><Icon name="trash" size={ICON_SIZE} /></button>}
         </div>
       </div>
       <div className="panel-body" style={{ padding: 0 }}>
@@ -69,7 +69,7 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
               autoFocus
               style={{ flex: 1 }}
             />
-            <button className="btn" title="Save" disabled={!draft.trim()} onClick={() => { void save(); }}><Icon name="check" /></button>
+            <button className="btn" title="Save" disabled={!draft.trim()} onClick={() => { void save(); }}><Icon name="check" size={ICON_SIZE} /></button>
           </div>
         )}
       </div>

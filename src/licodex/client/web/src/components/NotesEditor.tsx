@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import type { Note } from '@licodex/sdk';
-import { Icon } from './Icon';
+import { Icon, ICON_SIZE } from './Icon';
 
 interface Props {
   note: Note | null;              // Existing note (null when creating new)
@@ -45,13 +45,13 @@ export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose }: Pro
   return (
     <div className="note-fullscreen-container">
       <div className="note-fullscreen-bar">
-        <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" /></button>
+  <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" size={ICON_SIZE} /></button>
         {!isNew && (
-          <button className="btn danger" title="Delete" onClick={() => { void handleDelete(); }}><Icon name="trash" /></button>
+          <button className="btn danger" title="Delete" onClick={() => { void handleDelete(); }}><Icon name="trash" size={ICON_SIZE} /></button>
         )}
         <div className="actions-row">
-          <button className="btn" title="Save" disabled={!content.trim() || saving} onClick={() => { void handleSave(); }}><Icon name="check" /></button>
-          <button className="btn outline" title="Close" onClick={onClose}><Icon name="x" /></button>
+          <button className="btn" title="Save" disabled={!content.trim() || saving} onClick={() => { void handleSave(); }}><Icon name="check" size={ICON_SIZE} /></button>
+          <button className="btn outline" title="Close" onClick={onClose}><Icon name="x" size={ICON_SIZE} /></button>
         </div>
       </div>
       <div className="note-fullscreen-editor">
