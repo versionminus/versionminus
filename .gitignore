@@ -8,6 +8,7 @@
 **/dist
 **/build
 **/coverage
+**/node_modules
 tests/test.db
 
 # DevContainer entries
