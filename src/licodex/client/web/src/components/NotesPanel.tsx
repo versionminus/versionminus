@@ -1,9 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import type { Note } from '@licodex/sdk';
-import type { AsyncState, Paginated } from '@licodex/sdk/lib/types';
+// Use root export for all SDK types; deep import `@licodex/sdk/lib/types` breaks because of path mapping.
+import type { Note, AsyncState } from '@licodex/sdk';
 
 interface Props {
-  notesState: AsyncState<Paginated<Note>>;
+  notesState: AsyncState<Note[]>;
   selected?: string;
   onSelect: (n: Note) => void;
   onCreate: (content: string) => Promise<void>;
@@ -32,7 +32,7 @@ export function NotesPanel({ notesState, selected, onSelect, onCreate, onUpdate,
             <div className="note-list scrollbar-thin" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {notesState.loading && <div className="fade-text">loading notes...</div>}
               {notesState.error && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>}
-              {notesState.data?.items.map(n => (
+              {notesState.data?.map(n => (
                 <div
                   key={n.id}
                   className={`note-item ${selected === n.id ? 'active' : ''}`}
@@ -42,7 +42,7 @@ export function NotesPanel({ notesState, selected, onSelect, onCreate, onUpdate,
                   <div className="note-content-snippet">{n.content.slice(0, 60)}</div>
                 </div>
               ))}
-              {!notesState.loading && !notesState.data?.items.length && <div className="fade-text">no notes yet</div>}
+              {!notesState.loading && !(notesState.data?.length) && <div className="fade-text">no notes yet</div>}
             </div>
           </div>
           <div style={{ flex: 2, display: 'flex', flexDirection: 'column' }}>

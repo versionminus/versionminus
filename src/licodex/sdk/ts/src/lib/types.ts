@@ -28,6 +28,31 @@ export interface QuestionAnswer {
   latencyMs?: number;
 }
 
+// Chat / Threads / Messages
+export interface Thread {
+  id: string;
+  title: string;
+  user_id: string; // backend naming
+}
+
+export interface ThreadInput {
+  title: string;
+  user_id: string; // required to create
+}
+
+export interface Message {
+  id: string;
+  thread_id: string;
+  content: string;
+  response: string;
+}
+
+export interface MessageInput {
+  thread_id: string;
+  content?: string;
+  response?: string;
+}
+
 export interface Paginated<T> {
   items: T[];
   total: number;

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { UseLicodexReturn } from '@licodex/sdk/lib/hooks/useLicodex';
-import type { Note } from '@licodex/sdk';
+// Import from package root; deep path '@licodex/sdk/lib/hooks/useLicodex' does not exist in published package.
+import type { UseLicodexReturn, Note } from '@licodex/sdk';
 
 interface ChatLine { role: 'user' | 'assistant'; content: string; ts: number; }
 

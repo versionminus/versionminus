@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLicodexClient, LicodexClient } from '../client';
-import { LicodexConfig, Note, NoteInput, Paginated, QuestionAnswer, QuestionRequest } from '../types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message } from '../types';
 
 interface UseLicodexOptions extends LicodexConfig {}
 
@@ -12,7 +12,7 @@ interface AsyncState<T> {
 
 export interface UseLicodexReturn {
   client: LicodexClient;
-  notes: AsyncState<Paginated<Note>>;
+  notes: AsyncState<Note[]>;
   refreshNotes: () => void;
   createNote: (input: NoteInput) => Promise<Note | undefined>;
   updateNote: (id: string, input: Partial<NoteInput>) => Promise<Note | undefined>;
@@ -20,6 +20,14 @@ export interface UseLicodexReturn {
   ask: (req: QuestionRequest) => Promise<QuestionAnswer | undefined>;
   asking: boolean;
   answer?: QuestionAnswer;
+  threads: AsyncState<Thread[]>;
+  refreshThreads: () => void;
+  createThread: (input: ThreadInput) => Promise<Thread | undefined>;
+  updateThread: (id: string, input: Partial<ThreadInput>) => Promise<Thread | undefined>;
+  deleteThread: (id: string) => Promise<string | undefined>;
+  messages: AsyncState<Message[]>;
+  loadMessages: (threadId: string) => void;
+  createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
 }
 
 export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
@@ -27,14 +35,16 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   if (!clientRef.current) clientRef.current = createLicodexClient(options);
   const client = clientRef.current;
 
-  const [notes, setNotes] = useState<AsyncState<Paginated<Note>>>({ loading: false });
+  const [notes, setNotes] = useState<AsyncState<Note[]>>({ loading: false });
   const [answer, setAnswer] = useState<QuestionAnswer | undefined>();
+  const [threads, setThreads] = useState<AsyncState<Thread[]>>({ loading: false });
+  const [messages, setMessages] = useState<AsyncState<Message[]>>({ loading: false });
   const [asking, setAsking] = useState(false);
 
   const loadNotes = useCallback(async () => {
-    setNotes((s: AsyncState<Paginated<Note>>) => ({ ...s, loading: true, error: undefined }));
+    setNotes((s: AsyncState<Note[]>) => ({ ...s, loading: true, error: undefined }));
     try {
-      const data = await client.listNotes({ limit: 100 });
+      const data = await client.listNotes();
       setNotes({ loading: false, data });
     } catch (e) {
       setNotes({ loading: false, error: e as Error });
@@ -57,6 +67,62 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     },
     [client, loadNotes]
   );
+
+  // Threads
+  const loadThreads = useCallback(async () => {
+    setThreads((s: AsyncState<Thread[]>) => ({ ...s, loading: true, error: undefined }));
+    try {
+      const data = await client.listThreads();
+      setThreads({ loading: false, data });
+    } catch (e) {
+      setThreads({ loading: false, error: e as Error });
+    }
+  }, [client]);
+
+  useEffect(() => { void loadThreads(); }, [loadThreads]);
+
+  const createThread = useCallback(async (input: ThreadInput) => {
+    try {
+      const t = await client.createThread(input);
+      await loadThreads();
+      return t;
+    } catch (e) { console.error(e); }
+  }, [client, loadThreads]);
+
+  const updateThread = useCallback(async (id: string, input: Partial<ThreadInput>) => {
+    try {
+      const t = await client.updateThread(id, input);
+      await loadThreads();
+      return t;
+    } catch (e) { console.error(e); }
+  }, [client, loadThreads]);
+
+  const deleteThread = useCallback(async (id: string) => {
+    try {
+      await client.deleteThread(id);
+      await loadThreads();
+      return id;
+    } catch (e) { console.error(e); }
+  }, [client, loadThreads]);
+
+  // Messages (per thread)
+  const loadMessages = useCallback(async (threadId: string) => {
+    setMessages({ loading: true });
+    try {
+      const data = await client.listMessages(threadId);
+      setMessages({ loading: false, data });
+    } catch (e) {
+      setMessages({ loading: false, error: e as Error });
+    }
+  }, [client]);
+
+  const createMessage = useCallback(async (threadId: string, content: string) => {
+    try {
+      const m = await client.createMessage({ thread_id: threadId, content });
+      await loadMessages(threadId);
+      return m;
+    } catch (e) { console.error(e); }
+  }, [client, loadMessages]);
 
   const updateNote = useCallback(
     async (id: string, input: Partial<NoteInput>) => {
@@ -112,7 +178,15 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       ask,
       asking,
       answer,
+      threads,
+      refreshThreads: loadThreads,
+      createThread,
+      updateThread,
+      deleteThread,
+      messages,
+      loadMessages,
+      createMessage,
     }),
-    [answer, ask, asking, client, createNote, deleteNote, loadNotes, notes, updateNote]
+    [answer, ask, asking, client, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage]
   );
 }

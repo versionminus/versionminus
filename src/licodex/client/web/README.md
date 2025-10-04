@@ -12,7 +12,7 @@ Retro-modern terminal-inspired React interface consuming the local TypeScript SD
 
 ## Configuration
 
-The SDK supplies a default API base URL: `http://localhost:8000`. Override later by passing `baseUrl` to `useLicodex({ baseUrl: 'https://api.example.com' })` if needed. No `.env` required for local usage.
+The SDK supplies a default API base URL: `http://licodex-api:8000`. Override later by passing `baseUrl` to `useLicodex({ baseUrl: 'https://api.example.com' })` if needed. No `.env` required for local usage.
 
 ## Local Development
 
@@ -28,7 +28,7 @@ npm install
 npm run dev
 ```
 
-Visit <http://localhost:5173> and ensure the API is reachable at `http://localhost:8000` (started via compose).
+Visit <http://localhost:5173> and ensure the API is reachable at `http://licodex-api:8000` (started via compose).
 
 ## Docker
 
