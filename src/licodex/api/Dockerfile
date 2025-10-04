@@ -23,10 +23,18 @@ COPY setup.py README.md ./
 RUN pip install -e .
 
 EXPOSE 8000
+# Optional ModelHub credentials (build args allow empty default; prefer passing at runtime to avoid baking secrets)
+ARG MODELHUB_API_KEY
+ARG MODELHUB_BASE_URL
+ARG MODELHUB
 
+# Base runtime configuration (model hub vars may be empty if not provided)
 ENV LOG_LEVEL=INFO \
     API_HOST=0.0.0.0 \
-    API_PORT=8000
+    API_PORT=8000 \
+    MODELHUB_API_KEY=${MODELHUB_API_KEY} \
+    MODELHUB_BASE_URL=${MODELHUB_BASE_URL} \
+    MODELHUB=${MODELHUB}
 
 # Entrypoint uses config module (env vars override defaults) to launch uvicorn
 CMD ["python", "-m", "licodex.api.run"]
