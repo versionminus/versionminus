@@ -22,8 +22,11 @@ build-db:
 up:
 	docker compose up -d
 
-down:
-	docker compose down -v
+down-api:
+	docker compose down -v api
+
+down-db:
+	docker compose down -v db
 
 lint:
 	ruff check src/licodex
