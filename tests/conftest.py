@@ -20,6 +20,7 @@ from licodex.db.session import AsyncSessionLocal, engine, Base  # noqa: E402
 from licodex.models.user import User  # noqa: E402
 from licodex.models.thread import Thread  # noqa: E402
 from licodex.models.message import Message  # noqa: E402
+from licodex.models.note import Note  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 
 @pytest_asyncio.fixture(autouse=True, scope="session")
@@ -55,6 +56,7 @@ async def _clear_tables():
     async with AsyncSessionLocal() as session:  # type: ignore
         # delete in child->parent order
         await session.execute(delete(Message))
+        await session.execute(delete(Note))
         await session.execute(delete(Thread))
         await session.execute(delete(User))
         await session.commit()

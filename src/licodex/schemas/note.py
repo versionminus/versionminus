@@ -8,12 +8,14 @@ from licodex.models.note import NoteStatus
 class NoteCreate(BaseModel):
     title: str = ""
     content: str = ""
+    user_id: uuid.UUID
 
 
 class NoteRead(ORMBase):
     id: uuid.UUID
     title: str
     content: str
+    user_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
     embedded_at: datetime | None

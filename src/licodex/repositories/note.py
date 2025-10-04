@@ -31,11 +31,12 @@ async def list_all(session: AsyncSession, include_deleted: bool = False) -> Sequ
 async def create(
     session: AsyncSession,
     *,
+    user_id: uuid.UUID,
     title: str = "",
     content: str = "",
     id: uuid.UUID | None = None,
 ) -> Note:
-    note = Note(title=title, content=content, **({"id": id} if id else {}))
+    note = Note(title=title, content=content, user_id=user_id, **({"id": id} if id else {}))
     session.add(note)
     await session.flush()
     return note

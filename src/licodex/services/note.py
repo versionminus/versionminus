@@ -29,11 +29,12 @@ class NoteNotFoundError(Exception):
 async def create_note(
     session: AsyncSession,
     *,
+    user_id: uuid.UUID,
     title: str = "",
     content: str = "",
     id: uuid.UUID | None = None,
 ) -> Note:
-    note = await note_repo.create(session, title=title, content=content, id=id)
+    note = await note_repo.create(session, user_id=user_id, title=title, content=content, id=id)
     return note
 
 

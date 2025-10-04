@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, DateTime, Boolean, Enum, func
+from sqlalchemy import String, DateTime, Boolean, Enum, func, ForeignKey
 from licodex.db.session import Base
 import enum
 
@@ -19,6 +19,7 @@ class Note(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), default="", index=True)
     content: Mapped[str] = mapped_column(String, default="")
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id"), nullable=False, index=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
