@@ -18,7 +18,7 @@ class Idea(Base):
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     title: Mapped[str] = mapped_column(String(255), default="", index=True)
     relationship_id: Mapped[uuid.UUID] = mapped_column(nullable=False)
-    note_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("notes.id"), nullable=False, index=True)
+    note_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("note.id"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
