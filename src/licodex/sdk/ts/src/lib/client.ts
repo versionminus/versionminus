@@ -28,7 +28,7 @@ export class LicodexClient {
         try {
           const method = (req.method || 'GET').toUpperCase();
           const url = (req.baseURL || '') + (req.url || '');
-          logger.info?.('[Licodex SDK] →', method, url, {
+          logger.info?.(`[Licodex SDK ${VERSION}] →`, method, url, {
             params: req.params,
             data: req.data,
             timeout: req.timeout,
@@ -42,7 +42,7 @@ export class LicodexClient {
           try {
             const method = (res.config.method || 'GET').toUpperCase();
             const url = (res.config.baseURL || '') + (res.config.url || '');
-            logger.info?.('[Licodex SDK] ←', res.status, method, url, {
+            logger.info?.(`[Licodex SDK ${VERSION}] ←`, res.status, method, url, {
               durationMs: (res as any).config?.metadata?.durationMs,
             });
           } catch { /* ignore logging errors */ }

@@ -18,13 +18,20 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId }: Props) {
     const q = input.trim();
     appendLocal({ role: 'user', content: q, ts: Date.now() });
     setInput('');
-    // Use stateful chat endpoint (stores assistant response). Notes not yet integrated in retrieval.
     await licodex.sendChatMessage(selectedThreadId, q);
-    // After sendChatMessage, licodex.loadMessages should have been called; clear local pending after short delay.
     setTimeout(() => setLocalPending([]), 200);
   }, [appendLocal, input, licodex, selectedThreadId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); });
+
+  if (!selectedThreadId) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', opacity: 0.7 }}>
+        <div style={{ fontSize: 14 }}>Select a thread from the left sidebar to start chatting.</div>
+        <div style={{ fontSize: 12, marginTop: 8 }}>Create a new thread to begin a stateful conversation.</div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -54,7 +61,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId }: Props) {
       <div className="chat-prompt">
         <input
           className="input prompt-input"
-          placeholder={!selectedThreadId ? 'Select or create a thread first' : selectedNote ? `Ask about: ${selectedNote.title}` : 'Ask a question...'}
+          placeholder={selectedNote ? `Ask about: ${selectedNote.title}` : 'Ask a question...'}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
