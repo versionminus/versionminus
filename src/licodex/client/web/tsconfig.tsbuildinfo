@@ -1,1 +1,1 @@
-{"root":["./src/env.d.ts","./src/main.tsx","./src/components/ChatPanel.tsx","./src/components/NotesPanel.tsx","./src/components/SystemBar.tsx","./src/components/ThreadsPanel.tsx","./src/pages/App.tsx"],"version":"5.9.3"}
+{"root":["./src/env.d.ts","./src/main.tsx","./src/components/ChatPanel.tsx","./src/components/Icon.tsx","./src/components/NotesPanel.tsx","./src/components/QuotesComponent.tsx","./src/components/SystemBar.tsx","./src/components/ThreadsPanel.tsx","./src/pages/App.tsx"],"version":"5.9.3"}

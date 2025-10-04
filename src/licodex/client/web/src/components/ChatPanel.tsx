@@ -66,10 +66,12 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
     }
   }, [licodex, thread]);
 
+  if (!selectedThreadId) return null; // Only render when a thread is active (Quotes or Note editor shown elsewhere otherwise)
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-        <span style={{ opacity: .7, flex: 1 }}>{thread?.title || 'chat'}</span>
+  <span style={{ opacity: .7, flex: 1 }}>{thread?.title || (selectedNote ? 'note' : '')}</span>
         {thread && (
           <div style={{ display: 'flex', gap: 6 }}>
             <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" /></button>
@@ -78,11 +80,6 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
           </div>
         )}
       </div>
-      {!selectedThreadId && (
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', flexDirection: 'column', padding:32 }}>
-          <div className="empty-state">thought is a world vastly superior that the physical world<small>create a thread or a note to begin</small></div>
-        </div>
-      )}
       {selectedThreadId && (
         <>
           <div className="chat-history scrollbar-thin">
