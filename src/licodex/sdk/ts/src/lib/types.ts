@@ -23,6 +23,8 @@ export interface NoteInput {
   id?: string;
   title?: string;
   content: string;
+  // Backend requires user_id (NoteCreate schema). Make explicit here so callers must provide it.
+  user_id: string;
 }
 
 export interface Note extends NoteInput {
@@ -96,6 +98,23 @@ export interface LicodexAuthState {
   apiKey?: string;
   userId?: string;
 }
+
+// Users ----------------------------------------------------------------------
+export interface UserCreate {
+  email: string;
+  role?: 'user' | 'admin';
+}
+
+export interface User {
+  id: string;
+  email: string;
+  role: string; // backend returns string ("user" | "admin")
+  created_at: string; // ISO timestamp
+}
+
+// A default / fallback user id for demo contexts where auth is not yet wired.
+// This is intentionally exported so consuming apps can rely on a single value.
+export const DEFAULT_USER_ID = 'e1bee915-79b0-4043-b063-ac6f72ae7448';
 
 // Re-exported internal helper state shapes for consumer convenience
 export interface AsyncState<T> {

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLicodexClient, LicodexClient } from '../client';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message } from '../types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID } from '../types';
 
 interface UseLicodexOptions extends LicodexConfig {}
 
@@ -12,6 +12,8 @@ interface AsyncState<T> {
 
 export interface UseLicodexReturn {
   client: LicodexClient;
+  currentUser?: User;
+  refreshUser: () => void;
   notes: AsyncState<Note[]>;
   refreshNotes: () => void;
   createNote: (input: NoteInput) => Promise<Note | undefined>;
@@ -37,6 +39,7 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   const client = clientRef.current;
 
   const [notes, setNotes] = useState<AsyncState<Note[]>>({ loading: false });
+  const [currentUser, setCurrentUser] = useState<User | undefined>();
   const [answer, setAnswer] = useState<QuestionAnswer | undefined>();
   const [threads, setThreads] = useState<AsyncState<Thread[]>>({ loading: false });
   const [messages, setMessages] = useState<AsyncState<Message[]>>({ loading: false });
@@ -55,6 +58,16 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   useEffect(() => {
     void loadNotes();
   }, [loadNotes]);
+
+  // Load default user (best-effort; non-fatal)
+  const loadUser = useCallback(async () => {
+    try {
+      const u = await client.getUserOrDefault(DEFAULT_USER_ID);
+      setCurrentUser(u);
+    } catch (e) { /* ignore */ }
+  }, [client]);
+
+  useEffect(() => { void loadUser(); }, [loadUser]);
 
   const createNote = useCallback(
     async (input: NoteInput) => {
@@ -189,6 +202,8 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   return useMemo(
     () => ({
       client,
+      currentUser,
+      refreshUser: loadUser,
       notes,
       refreshNotes: loadNotes,
       createNote,
@@ -207,6 +222,6 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       createMessage,
       sendChatMessage,
     }),
-    [answer, ask, asking, client, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage]
+    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage]
   );
 }

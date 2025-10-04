@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse } from './types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID } from './types';
 
 export const DEFAULT_BASE_URL = 'http://licodex-api:8000';
 export const VERSION="1.0.0";
@@ -74,6 +74,36 @@ export class LicodexClient {
     this.config.apiKey = apiKey;
     if (apiKey) this.axios.defaults.headers.Authorization = `Bearer ${apiKey}`;
     else delete this.axios.defaults.headers.Authorization;
+  }
+
+  // Users --------------------------------------------------------------------
+  async listUsers(): Promise<User[]> {
+    const { data } = await this.axios.get(`${API_PREFIX}/users/`);
+    return data;
+  }
+
+  async getUserOrDefault(id?: string): Promise<User | undefined> {
+    const target = id || DEFAULT_USER_ID;
+    try {
+      const users = await this.listUsers();
+      return users.find(u => u.id === target);
+    } catch (e) {
+      return undefined;
+    }
+  }
+
+  async createUser(input: UserCreate): Promise<User> {
+    const { data } = await this.axios.post(`${API_PREFIX}/users/`, input);
+    return data;
+  }
+
+  async updateUserEmail(id: string, email: string): Promise<User> {
+    const { data } = await this.axios.patch(`${API_PREFIX}/users/${id}/email`, { email });
+    return data;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.axios.delete(`${API_PREFIX}/users/${id}`);
   }
 
   // Notes
