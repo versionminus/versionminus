@@ -12,19 +12,17 @@ interface Props {
 // List-only panel. Editing moved to NotesEditor.
 export function NotesPanel({ notesState, selected, onSelect, onNew }: Props) {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ opacity: .7 }}>notes</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+    <div className="flex-col-full">
+      <div className="terminal-titlebar gap-6">
+        <span className="muted">notes</span>
+        <div className="actions-row">
           <button className="btn" title="New note" onClick={onNew}><Icon name="plus" /></button>
         </div>
       </div>
-      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflow: 'hidden' }}>
-        <div className="note-list scrollbar-thin" style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div className="panel-body">
+        <div className="note-list scrollbar-thin">
           {notesState.loading && <div className="fade-text">loading notes...</div>}
-          {notesState.error && (notesState.data?.length || 0) > 0 && (
-            <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>
-          )}
+          {notesState.error && (notesState.data?.length || 0) > 0 && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>}
           {notesState.data?.map(n => (
             <div
               key={n.id}

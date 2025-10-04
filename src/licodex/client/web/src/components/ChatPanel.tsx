@@ -69,11 +69,11 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
   if (!selectedThreadId) return null; // Only render when a thread is active (Quotes or Note editor shown elsewhere otherwise)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-  <span style={{ opacity: .7, flex: 1 }}>{thread?.title || (selectedNote ? 'note' : '')}</span>
+    <div className="flex-col-full">
+      <div className="terminal-titlebar gap-8">
+        <span className="muted-grow">{thread?.title || (selectedNote ? 'note' : '')}</span>
         {thread && (
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="btn-row">
             <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" /></button>
             <button className="btn outline small" title="Reset messages" disabled={resetting || licodex.messages.loading} onClick={() => void resetThread()}><Icon name="refresh" /></button>
             <button className="btn danger small" title="Delete thread" onClick={() => void deleteThread()}><Icon name="trash" /></button>

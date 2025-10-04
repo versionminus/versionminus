@@ -46,7 +46,7 @@ export function App() {
   }, [licodex, selectedNote]);
 
   return (
-    <div className="layout-root" style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="layout-root flex-col-full">
       <SystemBar
         licodex={licodex}
         showThreads={showThreads}
@@ -54,9 +54,9 @@ export function App() {
         onToggleThreads={() => setShowThreads(s => !s)}
         onToggleNotes={() => setShowNotes(s => !s)}
       />
-      <div style={{ display:'flex', flex:1, minHeight:0 }}>
+      <div className="main-content">
         {showThreads && (
-          <div style={{ width:220, borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column' }}>
+          <div className="threads-sidebar">
             <ThreadsPanel
               threads={licodex.threads.data}
               loading={licodex.threads.loading}
@@ -70,7 +70,7 @@ export function App() {
           </div>
         )}
         {/* Center content area: quotes, chat, or full-screen note editor */}
-        <div style={{ flex:1, position:'relative', display:'flex', flexDirection:'column', minWidth:0 }}>
+        <div className="center-content">
           {selectedThreadId && (
             <ChatPanel
               licodex={licodex}
@@ -93,7 +93,7 @@ export function App() {
           )}
         </div>
         {showNotes && (
-          <div style={{ width:300, borderLeft:'1px solid var(--border)', display:'flex', flexDirection:'column' }}>
+          <div className="notes-sidebar">
             <NotesPanel
               notesState={licodex.notes}
               selected={selectedNote?.id}

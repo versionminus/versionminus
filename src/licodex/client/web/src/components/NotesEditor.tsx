@@ -45,14 +45,12 @@ export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose }: Pro
   return (
     <div className="note-fullscreen-container">
       <div className="note-fullscreen-bar">
-        <button className="btn" title="New note" disabled={isNew} onClick={() => { /* start new: simply reset */ setContent(''); }}><Icon name="plus" /></button>
+        <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" /></button>
         {!isNew && (
           <button className="btn danger" title="Delete" onClick={() => { void handleDelete(); }}><Icon name="trash" /></button>
         )}
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-          <button className="btn" title="Save" disabled={!content.trim() || saving} onClick={() => { void handleSave(); }}>
-            <Icon name="check" />
-          </button>
+        <div className="actions-row">
+          <button className="btn" title="Save" disabled={!content.trim() || saving} onClick={() => { void handleSave(); }}><Icon name="check" /></button>
           <button className="btn outline" title="Close" onClick={onClose}><Icon name="x" /></button>
         </div>
       </div>

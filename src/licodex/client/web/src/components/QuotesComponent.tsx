@@ -61,7 +61,7 @@ export const QuotesComponent: React.FC = () => {
   const visibleQuote = current.quote.slice(0, displayedChars);
 
   return (
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', height:'100%', width:'100%' }}>
+    <div className="center-fill">
       <div className="quotes-centered-container">
         <div key={authorFadeKey} className="quotes-author fade-cycle">{current.author}</div>
         <div className="quotes-quote">{visibleQuote}<span className="cursor">{displayedChars < current.quote.length ? '▌' : ' '}</span></div>

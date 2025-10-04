@@ -32,17 +32,17 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
   }, [draft, editingId, onCreate, onRename, cancel]);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-      <div className="terminal-titlebar" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ opacity: .7 }}>threads</span>
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+    <div className="flex-col-full">
+      <div className="terminal-titlebar gap-6">
+        <span className="muted">threads</span>
+        <div className="actions-row">
           <button className="btn" title="New thread" onClick={startNew}><Icon name="plus" /></button>
           {editingId && <button className="btn outline" title="Cancel" onClick={cancel}><Icon name="x" /></button>}
           {editingId && editingId !== 'new' && <button className="btn danger" title="Delete" onClick={() => { void onDelete(editingId); cancel(); }}><Icon name="trash" /></button>}
         </div>
       </div>
-      <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8, flex: 1, overflow: 'hidden' }}>
-        <div className="scrollbar-thin" style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, overflowY: 'auto' }}>
+      <div className="panel-body">
+        <div className="scrollbar-thin scroll-flex-col">
           {loading && <div className="fade-text">loading threads...</div>}
             {error && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading threads</div>}
           {threads?.map(t => (
@@ -58,7 +58,7 @@ export function ThreadsPanel({ threads, loading, error, selected, onSelect, onCr
           {!loading && !(threads?.length) && <div className="fade-text">no threads yet</div>}
         </div>
         {editingId && (
-          <div style={{ display: 'flex', gap: 6 }}>
+          <div className="btn-row" style={{ width: '100%' }}>
             <input
               className="input"
               placeholder={editingId === 'new' ? 'New thread title' : 'Rename thread'}
