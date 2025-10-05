@@ -3,9 +3,6 @@ from pydantic import Field, AliasChoices, SecretStr
 from functools import lru_cache
 from typing import Optional
 
-# LOCAL_modelhub=nn-ai-marketplace
-# LOCAL_modelhub_base_url=https://api.marketplace.novo-genai.com/v1
-
 class Settings(BaseSettings):
     # API
     app_name: str = Field(default="licodex-api", validation_alias=AliasChoices("APP_NAME", "LICODEX_APP_NAME"))
@@ -73,9 +70,9 @@ class Settings(BaseSettings):
         description="Seconds between retry attempts while establishing initial Milvus connection."
     )
 
-    # label: openai_text_embedding_3_small
+    # label: openai_text_embedding_ada
     rag_embedding_model: Optional[str] = Field(
-        default="text-embedding-3-small",
+        default="text-embedding-ada-002",
         validation_alias=AliasChoices("EMBEDDING_MODEL"),
         description="Embedding model name used for RAG / vector creation."
     )

@@ -1,53 +1,66 @@
-from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+"""
+Note text ->
+(embedding function) ->
+1536-float vector ->
+stored alongside note_id & metadata in Milvus ->
+index makes nearest-neighbor search fast ->
+search returns candidates ->
+get original note content from pg
+"""
+from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
 import hashlib
+from datetime import datetime
+import json
 from pymilvus import Collection, utility
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from licodex.core.config import get_settings
 from licodex.core.milvus.milvus import get_milvus
+from licodex.core.modelhub import get_modelhub_client
+from licodex.schemas.embeddings import EmbeddingRequest, SearchRequest, HealthResponse
+from licodex.api import deps
+from licodex.models.note import Note, NoteStatus
+from sqlalchemy import select
+
+MAX_CHUNK_TOKENS = 800  # simple heuristic for splitting very long notes
+CHUNK_OVERLAP = 50
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
 
-class EmbeddingRequest(BaseModel):
-    model: str
-    input: list[str] | str
-    collection: Optional[str] = None  # default to 'notes' if not provided
-    upsert: bool = True               # if false, only generate and return vectors
-    # Optional metadata for insertion
-    note_ids: Optional[List[str]] = Field(default=None, description="Parallel list of note ids (len must match inputs if provided)")
-    user_ids: Optional[List[str]] = Field(default=None, description="Parallel list of user ids (len must match inputs if provided)")
-    statuses: Optional[List[str]] = Field(default=None, description="Parallel list of statuses (len must match inputs if provided)")
-    metadatas: Optional[List[str]] = Field(default=None, description="Parallel list of JSON metadata strings (len must match inputs if provided)")
+def _split_text(text: str) -> List[str]:
+    # Extremely naive tokenizer by whitespace. Improve later with tiktoken.
+    words = text.split()
+    if len(words) <= MAX_CHUNK_TOKENS:
+        return [text]
+    chunks = []
+    start = 0
+    while start < len(words):
+        end = min(start + MAX_CHUNK_TOKENS, len(words))
+        chunk = " ".join(words[start:end])
+        chunks.append(chunk)
+        if end == len(words):
+            break
+        start = max(end - CHUNK_OVERLAP, end)  # avoid negative; minimal overlap currently
+    return chunks
 
 
-class SearchRequest(BaseModel):
-    collection: Optional[str] = None
-    query: str
-    top_k: int = 5
-    metric_type: str = Field(default="L2", pattern="^(L2|IP|COSINE)$")
-    # Optionally allow raw embedding vector for advanced clients
-    vector: Optional[List[float]] = None
-
-
-class HealthResponse(BaseModel):
-    collections: List[str]
-    ready: bool
-    default_collection_present: bool
-
-
-def _hash_embedding(text: str, dim: int) -> List[float]:
-    # Stable pseudo-embedding using repeated SHA256 expansion to required dim
-    needed = dim * 4
-    buf = b""
-    i = 0
-    while len(buf) < needed:
-        buf += hashlib.sha256(f"{i}:{text}".encode("utf-8")).digest()
-        i += 1
-    out: List[float] = []
-    for off in range(0, needed, 4):
-        out.append(int.from_bytes(buf[off:off+4], 'big') / 0xFFFFFFFF)
-    return out[:dim]
+def _embed_texts(texts: List[str], model: str, dim: int) -> List[List[float]]:
+    client = get_modelhub_client()
+    if client is None:
+        raise HTTPException(status_code=503, detail="Embedding model client not configured")
+    # OpenAI compatible embeddings API
+    try:
+        resp = client.embeddings.create(model=model, input=texts)  # type: ignore[attr-defined]
+        vectors = [item.embedding for item in resp.data]
+    except Exception as e:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"Embedding generation failed: {e}")
+    # Optional dim validation
+    for v in vectors:
+        if len(v) != dim:
+            raise HTTPException(status_code=500, detail=f"Embedding dimension mismatch {len(v)} != expected {dim}")
+    return vectors
 
 
 @router.get("/health", response_model=HealthResponse, summary="Milvus embeddings health")
@@ -61,7 +74,7 @@ async def embeddings_health():
 
 
 @router.post("/", summary="Create (and optionally store) embeddings")
-async def create_embeddings(req: EmbeddingRequest):
+async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depends(deps.get_db)):
     # Normalize input to list
     inputs = [req.input] if isinstance(req.input, str) else list(req.input)
     if not inputs:
@@ -70,8 +83,25 @@ async def create_embeddings(req: EmbeddingRequest):
     settings = get_settings()
     dim = settings.rag_embedding_model_output or settings.embedding_default_dim or 1536
 
-    # Generate vectors
-    vectors = [_hash_embedding(text, dim) for text in inputs]
+    # Expand and chunk any long inputs
+    expanded_inputs: List[str] = []
+    input_note_ids: List[str] | None = None
+    if isinstance(req.note_ids, list):
+        input_note_ids = []
+    for idx, text in enumerate(inputs):
+        pieces = _split_text(text)
+        if input_note_ids is not None:
+            # replicate note id per chunk
+            nid = req.note_ids[idx] if req.note_ids and idx < len(req.note_ids) else ""
+            input_note_ids.extend([nid] * len(pieces))
+        expanded_inputs.extend(pieces)
+
+    if input_note_ids is not None:
+        req.note_ids = input_note_ids
+
+    # Generate vectors using real embedding model
+    model_name = req.model or settings.rag_embedding_model
+    vectors = _embed_texts(expanded_inputs, model_name, dim)
 
     if not req.upsert:
         return {"model": req.model, "data": vectors, "dimensions": dim}
@@ -105,17 +135,29 @@ async def create_embeddings(req: EmbeddingRequest):
     _validate_parallel("statuses", req.statuses)
     _validate_parallel("metadatas", req.metadatas)
 
+    # Build enriched metadata baseline if needed
+    enriched_metadatas: List[str] | None = None
+    if req.metadatas is None:
+        enriched_metadatas = []
+        for text in expanded_inputs:
+            first_line = text.strip().splitlines()[0][:120] if text.strip() else ""
+            meta_obj = {
+                "pseudo_title": first_line,
+                "content_length": len(text),
+                "created_at": datetime.utcnow().isoformat(),
+            }
+            enriched_metadatas.append(json.dumps(meta_obj))
     for fname in remaining_fields:
         if fname == 'note_id':
-            payload.append(req.note_ids or ["" for _ in inputs])
+            payload.append(req.note_ids or ["" for _ in expanded_inputs])
         elif fname == 'user_id':
-            payload.append(req.user_ids or ["" for _ in inputs])
+            payload.append(req.user_ids or ["" for _ in expanded_inputs])
         elif fname == 'status':
-            payload.append(req.statuses or ["EMBEDDED" for _ in inputs])
+            payload.append(req.statuses or ["EMBEDDED" for _ in expanded_inputs])
         elif fname == 'metadata':
-            payload.append(req.metadatas or ["{}" for _ in inputs])
+            payload.append(req.metadatas or enriched_metadatas or ["{}" for _ in expanded_inputs])
         else:
-            payload.append(["" for _ in inputs])
+            payload.append(["" for _ in expanded_inputs])
 
     try:
         coll.insert(payload)
@@ -123,7 +165,23 @@ async def create_embeddings(req: EmbeddingRequest):
     except Exception as e:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Milvus insert failed: {e}")
 
-    return {"model": req.model, "data": vectors, "dimensions": dim, "collection": collection_name, "count": len(vectors)}
+    # Mark associated notes as embedded (if note_ids supplied)
+    if req.note_ids:
+        try:
+            ids_set = {nid for nid in req.note_ids if nid}
+            if ids_set:
+                # load notes and update
+                stmt = select(Note).where(Note.id.in_(list(ids_set)))  # type: ignore[arg-type]
+                res = await session.execute(stmt)
+                for note in res.scalars():
+                    note.embedded = True
+                    note.embedded_at = datetime.utcnow()
+                await session.flush()
+                await session.commit()
+        except Exception:  # pragma: no cover - don't fail main response
+            pass
+
+    return {"model": model_name, "data": vectors, "dimensions": dim, "collection": collection_name, "count": len(vectors)}
 
 
 @router.post("/search", summary="Vector similarity search against a collection")
@@ -151,7 +209,8 @@ async def search_embeddings(req: SearchRequest):
             raise HTTPException(status_code=400, detail=f"Provided vector dim {len(req.vector)} != expected {dim}")
         qvec = req.vector
     else:
-        qvec = _hash_embedding(req.query, dim)
+        # Real embedding generation for query
+        qvec = _embed_texts([req.query], settings.rag_embedding_model or req.model, dim)[0]
 
     search_params = {"metric_type": req.metric_type, "params": {"nprobe": 10}}
     try:
