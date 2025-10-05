@@ -1,0 +1,16 @@
+{
+  "description": "User notes embeddings (content + metadata).",
+  "fields": [
+    {"name": "id", "type": "INT64", "is_primary": true, "auto_id": true},
+    {"name": "vector", "type": "FLOAT_VECTOR", "dim": 1536},
+    {"name": "note_id", "type": "VARCHAR", "max_length": 64, "description": "UUID of originating note"},
+    {"name": "user_id", "type": "VARCHAR", "max_length": 64, "description": "UUID of note owner"},
+    {"name": "status", "type": "VARCHAR", "max_length": 20, "description": "Note status (AVAILABLE/DELETED)"},
+    {"name": "metadata", "type": "VARCHAR", "max_length": 2048, "description": "JSON metadata (truncated)"}
+  ],
+  "index": {
+    "index_type": "IVF_FLAT",
+    "metric_type": "L2",
+    "params": {"nlist": 128}
+  }
+}
