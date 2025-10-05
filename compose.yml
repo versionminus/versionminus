@@ -18,9 +18,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      licodex:
-        aliases:
-          - etcd
+      - licodex
 
   milvus-minio:
     container_name: licodex-milvus-minio
@@ -37,9 +35,7 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      licodex:
-        aliases:
-          - minio
+      - licodex
 
   milvus:
     build:
@@ -48,9 +44,11 @@ services:
     image: ghcr.io/diogobaltazar/licodex-milvus:1.0.0
     container_name: licodex-milvus
     environment:
-      # These rely on network aliases defined for etcd & minio services above
-      ETCD_ENDPOINTS: etcd:2379
-      MINIO_ADDRESS: minio:9000
+      # Use explicit service names (no network aliases required)
+      # Service 'milvus-etcd' exposes client port 2379
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      # Service 'milvus-minio' exposes port 9000
+      MINIO_ADDRESS: milvus-minio:9000
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-}
     volumes:
       - licodex-milvus:/var/lib/milvus
