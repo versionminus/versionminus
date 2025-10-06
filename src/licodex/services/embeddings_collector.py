@@ -60,7 +60,7 @@ async def collect_missing_embeddings(session: AsyncSession, base_url: str | None
             contents = [n.content for n in notes]
             note_ids = [str(n.id) for n in notes]
             # use configured embedding model
-            model = settings.rag_embedding_model or "text-embedding-ada-002"
+            model = settings.rag_embedding_model
             payload = {"model": model, "input": contents, "note_ids": note_ids, "upsert": True}
             try:
                 resp = await client.post(f"{base_url}{API_EMBEDDINGS_PATH}", json=payload)
