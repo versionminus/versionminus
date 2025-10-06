@@ -16,8 +16,6 @@ set -euo pipefail
 # Environment overrides:
 #   BASE_URL (default http://licodex-api:8000)
 #   API_PREFIX (default /api/v1)
-#   EMBEDDING_MODEL (default text-embedding-ada-002)
-#   SEARCH_TOP_K (default 5)
 #
 # Flags:
 #   --clean-before   Remove any existing prior smoke embed user (by timestamp token) before run
@@ -147,10 +145,33 @@ emb_health=$(curl_json GET "${API_PREFIX}/embeddings/health") || fail "embedding
 grep -q '"ready":true' <<<"$emb_health" || log "WARNING: embeddings health not ready (continuing)"
 
 timestamp=$(date +%s%N)
+
+# Allow overriding the test user email; default keeps previous behavior.
+# NOTE: The cleanup_user_and_notes previously looked for pattern embed-<token>@, but we
+# actually used a static email causing --clean-before to be ineffective and leading to 409.
+# We now (best-effort) delete the static/default email if present when CLEAN_BEFORE=1.
+email="${SMOKE_EMBED_EMAIL:-charlotte@licodex.com}"
+
+delete_user_by_email() {
+  local target_email="$1"
+  local users_json uid
+  if ! users_json=$(curl -sS --fail "${BASE_URL}${API_PREFIX}/users/" 2>/dev/null); then
+    log "Skip targeted email cleanup: list users failed"; return 0
+  fi
+  # Extract id for exact matching email (JSON is simple list of objects)
+  uid=$(sed -n "s/.*{\\\"id\\\":\\\"\\([^\\\"]*\\)\\\",\\\"email\\\":\\\"${target_email//./\\.}\\\".*/\\1/p" <<<"$users_json" | head -n1 || true)
+  [[ -z "$uid" ]] && { log "No existing user found for email $target_email"; return 0; }
+  log "Pre-clean deleting existing user $uid (email=$target_email)"
+  curl -sS -X DELETE "${BASE_URL}${API_PREFIX}/users/$uid" -o /dev/null || true
+}
+
 if [[ $CLEAN_BEFORE -eq 1 ]]; then
+  # First attempt targeted deletion for the (possibly static) email.
+  delete_user_by_email "$email" || true
+  # Also retain legacy token-based cleanup (will almost always be a no-op with static email).
   cleanup_user_and_notes "$timestamp" || true
 fi
-email="charlotte@licodex.com"
+
 note_token="EMBEDTEST-${timestamp}"
 note_content="This is an embedding smoke test note containing token '${note_token}' to validate vector search retrieval. Search for token ${note_token} to find this note."
 

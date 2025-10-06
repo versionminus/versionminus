@@ -74,20 +74,16 @@ smoke-populate:
 	echo "Running smoke.sh with flags: '$$flags' and env: '$$env_vars'"; \
 	eval "$$env_vars devtools/bin/smoke.sh $$flags"
 
-#  make smoke-embed-populate clean_before=1 clean_after=1 model=text-embedding-ada-002 top_k=5
+#  make smoke-embed-populate clean_before=1 clean_after=1
 #  Purpose: run embeddings smoke script (devtools/bin/smoke-embed.sh) for end-to-end embedding + search.
 #  Variables (optional):
 #    clean_before=1    -> pass --clean-before (delete prior smoke embed user if present)
 #    clean_after=1     -> pass --clean-after (remove created resources after success)
-#    model=<name>      -> override EMBEDDING_MODEL
-#    top_k=<N>         -> override SEARCH_TOP_K
 smoke-embed-populate:
 	@flags=""; \
 	[ "$(clean_before)" = "1" ] && flags="$$flags --clean-before"; \
 	[ "$(clean_after)" = "1" ] && flags="$$flags --clean-after"; \
 	env_vars=""; \
-	[ -n "$(model)" ] && env_vars="$$env_vars EMBEDDING_MODEL=$(model)"; \
-	[ -n "$(top_k)" ] && env_vars="$$env_vars SEARCH_TOP_K=$(top_k)"; \
 	echo "Running smoke-embed.sh with flags: '$$flags' and env: '$$env_vars'"; \
 	eval "$$env_vars devtools/bin/smoke-embed.sh $$flags"
 
