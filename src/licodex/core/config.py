@@ -70,9 +70,9 @@ class Settings(BaseSettings):
         description="Seconds between retry attempts while establishing initial Milvus connection."
     )
 
-    # label: openai_text_embedding_ada
+    # label: text-embedding-ada-002
     rag_embedding_model: Optional[str] = Field(
-        default="text-embedding-ada-002",
+        default="openai_text_embedding_ada",
         validation_alias=AliasChoices("EMBEDDING_MODEL"),
         description="Embedding model name used for RAG / vector creation."
     )
