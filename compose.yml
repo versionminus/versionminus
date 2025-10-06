@@ -82,6 +82,9 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    # IMPORTANT: place db on the same user-defined network as api so hostname 'db' resolves inside api container
+    networks:
+      - licodex
 
   # MODELHUB_API_KEY=paste \\
   # MODELHUB_BASE_URL=paste \\
