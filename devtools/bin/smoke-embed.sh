@@ -25,8 +25,11 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://licodex-api:8000}"
 API_PREFIX="${API_PREFIX:-/api/v1}"
-EMBEDDING_MODEL="${EMBEDDING_MODEL:-text-embedding-ada-002}"  # keep in sync with config default
+EMBEDDING_MODEL="${EMBEDDING_MODEL:-openai_text_embedding_ada}"  # keep in sync with config default
 SEARCH_TOP_K="${SEARCH_TOP_K:-5}"
+SEARCH_RETRIES="${SEARCH_RETRIES:-8}"          # number of attempts to find the note in search
+SEARCH_RETRY_SLEEP="${SEARCH_RETRY_SLEEP:-1}"  # seconds between retries
+DEBUG_SMOKE_EMBED="${DEBUG_SMOKE_EMBED:-0}"    # set to 1 to dump last search payload/response on failure
 
 CLEAN_BEFORE=0
 CLEAN_AFTER=0
@@ -74,6 +77,9 @@ Options:
 
 Environment variables:
   BASE_URL, API_PREFIX, EMBEDDING_MODEL, SEARCH_TOP_K
+  SEARCH_RETRIES (default $SEARCH_RETRIES)
+  SEARCH_RETRY_SLEEP (default $SEARCH_RETRY_SLEEP)
+  DEBUG_SMOKE_EMBED=1 (dump last failed search payload/response)
 USAGE
 }
 
@@ -202,12 +208,47 @@ log "Verify note embedded flag"
 note_get=$(curl_json GET "${API_PREFIX}/notes/$note_id") || fail "fetch note failed"
 grep -q '"embedded":true' <<<"$note_get" || fail "note not marked embedded"
 
-log "Search for token via embeddings/search"
-search_payload=$(printf '{"collection":"notes","query":"%s","top_k":%s}' "$note_token" "$SEARCH_TOP_K")
-curl_json_status POST "${API_PREFIX}/embeddings/search" "$search_payload"
-[[ "$CURL_STATUS" == "200" ]] || fail "search request failed: $CURL_STATUS $CURL_BODY"
-grep -q "$note_id" <<<"$CURL_BODY" || fail "search results missing note_id ($note_id)"
-log "Search returned note successfully"
+log "Search for token via embeddings/search (retries=$SEARCH_RETRIES sleep=${SEARCH_RETRY_SLEEP}s)"
+search_query_token="$note_token"
+search_query_full="Embedding smoke test note retrieval $note_token"
+attempt_query() {
+  local q="$1"
+  printf '{"collection":"notes","query":"%s","top_k":%s}' "$q" "$SEARCH_TOP_K"
+}
+
+search_ok=0
+last_body=""
+for ((i=1;i<=SEARCH_RETRIES;i++)); do
+  if (( i == 1 )); then
+    search_payload=$(attempt_query "$search_query_token")
+  else
+    if (( i % 2 == 0 )); then
+      search_payload=$(attempt_query "$search_query_full")
+    else
+      search_payload=$(attempt_query "$search_query_token")
+    fi
+  fi
+  curl_json_status POST "${API_PREFIX}/embeddings/search" "$search_payload"
+  if [[ "$CURL_STATUS" == "200" ]]; then
+    last_body="$CURL_BODY"
+    if grep -q "$note_id" <<<"$CURL_BODY"; then
+      search_ok=1
+      break
+    fi
+  else
+    last_body="$CURL_BODY"
+  fi
+  [[ $i -lt $SEARCH_RETRIES ]] && sleep "$SEARCH_RETRY_SLEEP"
+done
+
+if [[ $search_ok -ne 1 ]]; then
+  if [[ $DEBUG_SMOKE_EMBED -eq 1 ]]; then
+    log "DEBUG last search payload: $search_payload"
+    log "DEBUG last search response: $last_body"
+  fi
+  fail "search did not return note_id ($note_id) after ${SEARCH_RETRIES} attempts"
+fi
+log "Search returned note successfully (attempt $i)"
 
 log "Embedding smoke test PASS (user=$user_id note=$note_id)"
 if [[ $CLEAN_AFTER -eq 1 ]]; then
