@@ -25,6 +25,7 @@ from sqlalchemy import select
 
 MAX_CHUNK_TOKENS = 800  # simple heuristic for splitting very long notes
 CHUNK_OVERLAP = 50
+MAX_VECTORS_PER_COLLECTION = 1000  # safety cap to avoid huge payloads
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
@@ -281,3 +282,71 @@ async def list_collections():
         out.append(col_info)
 
     return {"collections": out, "count": len(out)}
+
+
+@router.get("/vectors", summary="List vectors for all Milvus collections")
+async def list_all_vectors():
+    """Return vectors for every Milvus collection.
+
+    WARNING: Potentially large response. To avoid exhausting memory / network we cap
+    the number of vectors returned per collection at MAX_VECTORS_PER_COLLECTION.
+
+    Response shape:
+      {
+        "collections": [
+           {
+             "name": str,
+             "vector_field": str | None,
+             "count": int,                # total entities in collection
+             "returned": int,             # number of vectors actually included
+             "truncated": bool,           # true if capped
+             "vectors": [[float, ...], ...]
+           }, ...
+        ],
+        "total_vectors_returned": int
+      }
+    """
+    try:
+        get_milvus()
+    except Exception as e:  # pragma: no cover
+        raise HTTPException(status_code=503, detail=f"Milvus connection failed: {e}")
+
+    try:
+        names = utility.list_collections()
+    except Exception as e:  # pragma: no cover
+        raise HTTPException(status_code=500, detail=f"Failed to list collections: {e}")
+
+    collections_out = []
+    total_vectors = 0
+    for name in names:
+        info = {"name": name, "vector_field": None, "count": 0, "returned": 0, "truncated": False, "vectors": []}  # type: ignore[var-annotated]
+        try:
+            coll = Collection(name)
+            coll.load()
+            # Identify vector field (first FLOAT_VECTOR)
+            vector_field = next((f.name for f in coll.schema.fields if f.dtype.name == 'FLOAT_VECTOR'), None)
+            info["vector_field"] = vector_field
+            info["count"] = int(getattr(coll, 'num_entities', 0))
+            if not vector_field or info["count"] == 0:
+                collections_out.append(info)
+                continue
+            # Determine primary key field to craft a permissive query expression
+            pk_field = next((f.name for f in coll.schema.fields if f.is_primary), None)
+            expr = f"{pk_field} >= 0" if pk_field else ""
+            limit = min(info["count"], MAX_VECTORS_PER_COLLECTION)
+            if info["count"] > MAX_VECTORS_PER_COLLECTION:
+                info["truncated"] = True
+            try:
+                # Query all (capped) entities for just the vector field
+                results = coll.query(expr=expr, output_fields=[vector_field], limit=limit)
+                vectors = [r.get(vector_field) for r in results if isinstance(r, dict) and vector_field in r]
+                info["vectors"] = vectors
+                info["returned"] = len(vectors)
+                total_vectors += len(vectors)
+            except Exception as qerr:  # pragma: no cover
+                info["error"] = f"query failed: {qerr}"  # type: ignore[index]
+        except Exception as e:  # pragma: no cover
+            info["error"] = str(e)  # type: ignore[index]
+        collections_out.append(info)
+
+    return {"collections": collections_out, "total_vectors_returned": total_vectors, "max_per_collection": MAX_VECTORS_PER_COLLECTION}
