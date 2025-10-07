@@ -163,6 +163,14 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
 
     try:
         coll.insert(payload)
+        # 😎 Flush to ensure data is persisted and queryable immediately. Without an explicit
+        # flush Milvus may report num_entities=0 briefly and queries can return no vectors
+        # right after insertion (especially in tests that immediately list vectors).
+        try:  # pragma: no cover - external system timing
+            coll.flush()
+        except Exception:
+            # Non-fatal; proceed even if flush fails, data should become available eventually.
+            pass
         coll.load()
     except Exception as e:  # pragma: no cover
         raise HTTPException(status_code=500, detail=f"Milvus insert failed: {e}")

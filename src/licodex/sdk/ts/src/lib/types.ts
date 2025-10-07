@@ -17,6 +17,23 @@ export interface LicodexConfig {
    * Whether to log HTTP request attempts & results (default: true). Set false to silence.
    */
   logRequests?: boolean;
+  /**
+   * If true (default: false) the SDK will attempt to automatically embed notes
+   * after they are created and when their content is updated. You can override
+   * per-call by passing options to createNote/updateNote.
+   */
+  autoEmbedNotes?: boolean;
+  /**
+   * Default embedding model to use when auto embedding notes (falls back to
+   * backend default if omitted).
+   */
+  embedModel?: string;
+  /**
+   * If true, after an embedding operation the SDK will re-fetch the note from
+   * the API to obtain updated embedded / embedded_at fields. Default: false
+   * (we optimistically set embedded=true on the returned note instead).
+   */
+  refreshNoteAfterEmbed?: boolean;
 }
 
 export interface NoteInput {
