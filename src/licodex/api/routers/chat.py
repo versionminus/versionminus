@@ -228,5 +228,6 @@ async def chat_send(
         response=assistant_reply,
         model=resolved_model,
         usage=usage,
-        sources=[{"id": retrieval_group_id, "note_id": n_id, "quote": quote} for (n_id, quote) in retrieved_pairs],
+        source_id=retrieval_group_id,
+        sources=[{"note_id": str(n_id), "quote": quote} for (n_id, quote) in retrieved_pairs],
     )

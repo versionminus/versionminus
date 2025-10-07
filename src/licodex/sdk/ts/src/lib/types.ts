@@ -107,12 +107,13 @@ export interface ChatSendResponse {
   response: string;     // assistant reply
   model: string;        // resolved model
   usage: Record<string, any>; // coarse metrics (message counts etc.)
-  sources?: Array<{ id: string; note_id: string; quote: string }>;
+  source_id?: string | null; // retrieval group id
+  sources?: Array<{ note_id: string; quote: string }>;
 }
 
 // Retrieval source rows (optional convenience export for consumers)
 export interface Source {
-  id: string; // group id shared across rows
+  id: string; // group id (retrieval group id)
   note_id: string;
   quote: string;
 }

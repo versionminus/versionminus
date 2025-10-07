@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID, LicodexLogger } from './types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID, LicodexLogger, Source } from './types';
 
 export const DEFAULT_BASE_URL = 'http://licodex-api:8000';
 export const VERSION="1.0.0";
@@ -228,6 +228,11 @@ export class LicodexClient {
     // The backend expects snake_case keys already aligned with our interface.
     const { data } = await this.axios.post(`${API_PREFIX}/chat/send`, req);
     return data as ChatSendResponse;
+  }
+  async listSources(groupId: string): Promise<Source[]> {
+    const { data } = await this.axios.get(`${API_PREFIX}/sources/${groupId}`);
+    // API returns array of source rows (each includes note_id, quote) but no explicit id per row.
+    return (data || []).map((r: any) => ({ id: groupId, note_id: r.note_id, quote: r.quote })) as Source[];
   }
 
   // Threads

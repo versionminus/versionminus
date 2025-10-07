@@ -68,7 +68,7 @@ async def update_message_route(
     if payload.response is not None and payload.response != msg.response:
         msg.response = payload.response  # type: ignore
         updated = True
-    if payload.source is not None and payload.source != msg.source:
+    if payload.source is not None and payload.source != getattr(msg, 'source', None):
         msg.source = payload.source  # type: ignore
         updated = True
     if updated:

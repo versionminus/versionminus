@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLicodexClient, LicodexClient } from '../client';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID } from '../types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID, Source } from '../types';
 
 interface UseLicodexOptions extends LicodexConfig {}
 
@@ -34,6 +34,8 @@ export interface UseLicodexReturn {
   loadMessages: (threadId: string) => void;
   createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
   sendChatMessage: (threadId: string, content: string) => Promise<Message | undefined>;
+  loadSources: (groupId: string) => Promise<Source[] | undefined>;
+  sourcesByGroup: Record<string, Source[]>;
 }
 
 export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
@@ -48,6 +50,7 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   const [messages, setMessages] = useState<AsyncState<Message[]>>({ loading: false });
   const [asking, setAsking] = useState(false);
   const [embeddingState, setEmbeddingState] = useState<Record<string, 'idle' | 'embedding' | 'error' | 'embedded'>>({});
+  const [sourcesByGroup, setSourcesByGroup] = useState<Record<string, Source[]>>({});
 
   const loadNotes = useCallback(async () => {
     setNotes((s: AsyncState<Note[]>) => ({ ...s, loading: true, error: undefined }));
@@ -173,9 +176,23 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       // After sending, refresh messages for that thread so UI reflects persisted history
       await loadMessages(threadId);
       // Return a Message-shaped object (message_id maps to id) for convenience
-      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.sources?.[0]?.id } as Message;
+      if (resp.source_id && resp.sources?.length) {
+        const gid = resp.source_id as string;
+        setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote })) }));
+      }
+      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.source_id } as Message;
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
+
+  const loadSources = useCallback(async (groupId: string) => {
+    if (!groupId) return [];
+    if (sourcesByGroup[groupId]) return sourcesByGroup[groupId];
+    try {
+      const rows = await client.listSources(groupId);
+      setSourcesByGroup(s => ({ ...s, [groupId]: rows }));
+      return rows;
+    } catch (e) { console.error(e); }
+  }, [client, sourcesByGroup]);
 
   const updateNote = useCallback(
     async (id: string, input: Partial<NoteInput>) => {
@@ -295,7 +312,9 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       loadMessages,
       createMessage,
       sendChatMessage,
+      loadSources,
+      sourcesByGroup,
     }),
-    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage, embedNote, retryEmbedNote, embeddingState]
+    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage, embedNote, retryEmbedNote, embeddingState, loadSources, sourcesByGroup]
   );
 }
