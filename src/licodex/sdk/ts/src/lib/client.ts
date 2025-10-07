@@ -129,8 +129,13 @@ export class LicodexClient {
   }
 
   async deleteNote(id: string): Promise<{ id: string }> {
-    const { data } = await this.axios.delete(`${API_PREFIX}/notes/${id}`);
-    return data;
+    // Perform note deletion (backend returns 204 No Content on success)
+    await this.axios.delete(`${API_PREFIX}/notes/${id}`);
+    // Best-effort: also remove any embeddings for this note. Ignore failures so note deletion stays idempotent.
+    try {
+      await this.deleteNoteEmbedding(id);
+    } catch { /* swallow embedding deletion errors */ }
+    return { id };
   }
 
   // Embeddings -----------------------------------------------------------------
