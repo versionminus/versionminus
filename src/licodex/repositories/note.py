@@ -86,6 +86,9 @@ async def update(
 
 async def soft_delete(session: AsyncSession, note: Note) -> Note:
     note.status = NoteStatus.DELETED
+    # Mark embedding metadata as removed locally (even if Milvus deletion fails)
+    note.embedded = False
+    note.embedded_at = None
     # Also remove any embeddings for this note from Milvus if available
     try:  # pragma: no cover - external system
         from licodex.core.milvus.milvus import get_milvus

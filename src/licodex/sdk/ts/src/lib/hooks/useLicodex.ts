@@ -91,6 +91,10 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       try {
         const n = await client.createNote(input);
         await loadNotes();
+        // Initialize embedding state for new note if backend already flags it embedded
+        if (n) {
+          setEmbeddingState(s => ({ ...s, [n.id]: n.embedded ? 'embedded' : 'idle' }));
+        }
         return n;
       } catch (e) {
         console.error(e);
@@ -203,8 +207,16 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   );
 
   const embedNote = useCallback(async (id: string) => {
-    const note = notes.data?.find(n => n.id === id);
-    if (!note) return;
+    // Race condition safeguard: after creating a note we may call embedNote before loadNotes() completes.
+    // Attempt to find in local cache first; if missing, fetch directly from API.
+    let note = notes.data?.find(n => n.id === id);
+    if (!note) {
+      try {
+        note = await client.getNote(id);
+      } catch {
+        return; // Can't embed without the note content
+      }
+    }
     setEmbeddingState(s => ({ ...s, [id]: 'embedding' }));
     try {
       // First delete old embedding (safe even if none)
