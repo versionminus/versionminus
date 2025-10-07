@@ -24,7 +24,8 @@ async def create_message_route(payload: MessageCreate, session: AsyncSession = D
         msg = await create_message_service(
             session,
             thread_id=payload.thread_id,
-            content=payload.content
+            content=payload.content,
+            source=payload.source,
         )
         await session.commit()
         return msg  # type: ignore
@@ -66,6 +67,9 @@ async def update_message_route(
         updated = True
     if payload.response is not None and payload.response != msg.response:
         msg.response = payload.response  # type: ignore
+        updated = True
+    if payload.source is not None and payload.source != getattr(msg, 'source', None):
+        msg.source = payload.source  # type: ignore
         updated = True
     if updated:
         await session.flush()

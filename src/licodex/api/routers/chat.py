@@ -16,6 +16,7 @@ from licodex.services.message import (
     create_message as create_message_service,
     ThreadNotFoundError as MsgThreadNotFoundError,
 )
+from licodex.services.source import retrieve_relevant_notes_stub, create_sources_for_group
 from licodex.core.config import get_settings
 
 from licodex.core.modelhub import get_modelhub_client, resolve_chat_model
@@ -161,13 +162,19 @@ async def chat_send(
 
     history_user_texts = [m.content for m in prior_messages if m.content]
 
-    # 3. Create new message with empty response for now
+    # 3. Perform retrieval (stub) to collect contextual sources
+    import uuid as _uuid
+    retrieval_group_id = _uuid.uuid4()
+    retrieved_pairs = await retrieve_relevant_notes_stub(session, user_query=payload.content)
+
+    # 3b. Persist placeholder message (without response yet) including retrieval group id
     try:
         msg = await create_message_service(
             session,
             thread_id=payload.thread_id,
             content=payload.content,
             response="",
+            source=retrieval_group_id,
         )
     except MsgThreadNotFoundError:
         raise HTTPException(status_code=404, detail="Thread not found")
@@ -201,6 +208,9 @@ async def chat_send(
 
     # 5. Persist reply
     msg.response = assistant_reply  # type: ignore[attr-defined]
+    # Persist sources rows for retrieval
+    if retrieved_pairs:
+        await create_sources_for_group(session, group_id=retrieval_group_id, items=retrieved_pairs)
     await session.flush()
     await session.commit()
 
@@ -218,4 +228,6 @@ async def chat_send(
         response=assistant_reply,
         model=resolved_model,
         usage=usage,
+        source_id=retrieval_group_id,
+        sources=[{"note_id": str(n_id), "quote": quote} for (n_id, quote) in retrieved_pairs],
     )

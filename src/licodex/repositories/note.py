@@ -35,7 +35,8 @@ async def create(
     content: str = "",
     id: uuid.UUID | None = None,
 ) -> Note:
-    note = Note(content=content, user_id=user_id, **({"id": id} if id else {}))
+    # New notes always start unembedded
+    note = Note(content=content, user_id=user_id, embedded=False, embedded_at=None, **({"id": id} if id else {}))
     session.add(note)
     # Flush so INSERT is issued and server defaults (timestamps, etc.) are populated,
     # then refresh to eagerly load them. Without this, accessing attributes like
@@ -55,8 +56,23 @@ async def update(
     status: NoteStatus | None = None,
     embedded_at=None,
 ) -> Note:
+    content_changed = content is not None and content != note.content
     if content is not None:
         note.content = content
+    # Any content update should reset embedding status unless explicitly overridden and delete old embeddings from Milvus
+    if content_changed and embedded is None:
+        # Best-effort Milvus deletion so re-embedding generates fresh vectors
+        try:  # pragma: no cover - external system
+            from licodex.core.milvus.milvus import get_milvus
+            from pymilvus import Collection, utility
+            get_milvus()
+            if utility.has_collection("notes"):
+                coll = Collection("notes")
+                coll.delete(expr=f"note_id == '{note.id}'")
+        except Exception:
+            pass
+        note.embedded = False
+        note.embedded_at = None
     if embedded is not None:
         note.embedded = embedded
     if status is not None:
@@ -70,6 +86,21 @@ async def update(
 
 async def soft_delete(session: AsyncSession, note: Note) -> Note:
     note.status = NoteStatus.DELETED
+    # Mark embedding metadata as removed locally (even if Milvus deletion fails)
+    note.embedded = False
+    note.embedded_at = None
+    # Also remove any embeddings for this note from Milvus if available
+    try:  # pragma: no cover - external system
+        from licodex.core.milvus.milvus import get_milvus
+        from pymilvus import Collection, utility
+        get_milvus()
+        if utility.has_collection("notes"):
+            coll = Collection("notes")
+            # delete by scalar field expression
+            # note_id stored as string UUID
+            coll.delete(expr=f"note_id == '{note.id}'")
+    except Exception:
+        pass
     await session.flush()
     await session.refresh(note)
     return note

@@ -3,7 +3,7 @@ import {
   VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscRocket
 } from 'react-icons/vsc';
 
-export type IconName = 'plus' | 'x' | 'trash' | 'edit' | 'check' | 'refresh' | 'threads' | 'note' | 'send';
+export type IconName = 'plus' | 'x' | 'trash' | 'edit' | 'check' | 'refresh' | 'threads' | 'note' | 'send' | 'expand';
 
 // Single source of truth for sizing all icon-only buttons.
 export const ICON_SIZE = 14; // px
@@ -17,7 +17,8 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   refresh: VscRefresh,
   threads: VscCommentDiscussion,
   note: VscNotebook,
-  send: VscRocket
+  send: VscRocket,
+  expand: VscNotebook
 };
 
 interface Props { name: IconName; size?: number; }

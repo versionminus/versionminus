@@ -11,3 +11,5 @@ class Message(Base):
     content: Mapped[str] = mapped_column(String(255), default="")
     response: Mapped[str] = mapped_column(String(255), default="")
     thread_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("thread.id"), nullable=False)
+    # Group identifier referencing a set of Source rows (not a FK because Source.id is non-unique)
+    source: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)

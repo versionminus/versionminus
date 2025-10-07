@@ -1,4 +1,4 @@
-.PHONY: help dev lint format type test migrate install run pr smoke smoke-populate
+.PHONY: help dev lint format type test migrate install run pr smoke smoke-populate smoke-embed-populate
 
 PYTHON ?= python
 APP_MODULE ?= licodex.api.main:app
@@ -73,6 +73,19 @@ smoke-populate:
 	[ -n "$(messages)" ] && env_vars="$$env_vars MESSAGES_PER_THREAD=$(messages)"; \
 	echo "Running smoke.sh with flags: '$$flags' and env: '$$env_vars'"; \
 	eval "$$env_vars devtools/bin/smoke.sh $$flags"
+
+#  make smoke-embed-populate clean_before=1 clean_after=1
+#  Purpose: run embeddings smoke script (devtools/bin/smoke-embed.sh) for end-to-end embedding + search.
+#  Variables (optional):
+#    clean_before=1    -> pass --clean-before (delete prior smoke embed user if present)
+#    clean_after=1     -> pass --clean-after (remove created resources after success)
+smoke-embed-populate:
+	@flags=""; \
+	[ "$(clean_before)" = "1" ] && flags="$$flags --clean-before"; \
+	[ "$(clean_after)" = "1" ] && flags="$$flags --clean-after"; \
+	env_vars=""; \
+	echo "Running smoke-embed.sh with flags: '$$flags' and env: '$$env_vars'"; \
+	eval "$$env_vars devtools/bin/smoke-embed.sh $$flags"
 
 #  make pr title="refactor: api.endpoints, feat: delete, edit user"
 #  make pr title="fix: something"  # Provide your PR title via title variable

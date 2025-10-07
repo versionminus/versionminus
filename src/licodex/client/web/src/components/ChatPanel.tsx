@@ -18,6 +18,16 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
   const [localPending, setLocalPending] = useState<ChatLine[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const appendLocal = useCallback((line: ChatLine) => setLocalPending(h => [...h, line]), []);
+  const [openSourcesFor, setOpenSourcesFor] = useState<string | null>(null);
+  const toggleSources = useCallback(async (m: Message) => {
+    if (!m.source) return;
+    if (openSourcesFor === m.id) { setOpenSourcesFor(null); return; }
+    // load sources if not already cached
+    if (!licodex.sourcesByGroup[m.source]) {
+      await licodex.loadSources(m.source);
+    }
+    setOpenSourcesFor(m.id);
+  }, [licodex, openSourcesFor]);
 
   const send = useCallback(async () => {
     if (!input.trim() || !selectedThreadId) return;
@@ -84,12 +94,40 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
         <>
           <div className="chat-history scrollbar-thin">
             {/* Persisted messages from backend */}
-            {licodex.messages.data?.map((m: Message) => (
-              <div key={m.id + m.response}>
-                <div className='chat-line-user'>you &gt; {m.content}</div>
-                {m.response && <div className='chat-line-bot'>licodex &gt; {m.response}</div>}
-              </div>
-            ))}
+            {licodex.messages.data?.map((m: Message) => {
+              const groupId = m.source;
+              const cached = groupId ? licodex.sourcesByGroup[groupId] : undefined;
+              return (
+                <div key={m.id + m.response}>
+                  <div className='chat-line-user'>you &gt; {m.content}</div>
+                  {m.response && (
+                    <div className='chat-line-bot'>
+                      licodex &gt; {m.response}
+                      {groupId && (
+                        <button
+                          className='btn tiny outline ml-4'
+                          style={{ marginLeft: 8 }}
+                          title='Show sources'
+                          onClick={() => void toggleSources(m)}
+                        >
+                          <Icon name='expand' size={12} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {openSourcesFor === m.id && groupId && (
+                    <div className='terminal-box mt-2'>
+                      {!cached && <div className='fade-text'>loading sources...</div>}
+                      {cached && cached.map(s => (
+                        <div key={s.note_id} className='source-line clickable' onClick={() => { /* TODO integrate open note selection via parent */ }}>
+                          {s.note_id}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {/* Optimistic local lines not yet persisted */}
             {localPending.map(l => (
               <div key={l.ts} className={l.role === 'user' ? 'chat-line-user' : 'chat-line-bot'}>

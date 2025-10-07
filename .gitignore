@@ -21,13 +21,14 @@ tests/test.db
 .sudo_as_admin_successful
 .vscode-server/
 .bash_history
-
 # Exceptions
+!src/licodex/milvus/collection/config/notes.json
 !.vscode
 !.devcontainer
 !.devcontainer/devcontainer.json
 !.vscode/*.json
 !package*.json
+!**/quotes.json
 !.env.example
 !.bashrc
 !.githooks

@@ -17,6 +17,23 @@ export interface LicodexConfig {
    * Whether to log HTTP request attempts & results (default: true). Set false to silence.
    */
   logRequests?: boolean;
+  /**
+   * If true (default: false) the SDK will attempt to automatically embed notes
+   * after they are created and when their content is updated. You can override
+   * per-call by passing options to createNote/updateNote.
+   */
+  autoEmbedNotes?: boolean;
+  /**
+   * Default embedding model to use when auto embedding notes (falls back to
+   * backend default if omitted).
+   */
+  embedModel?: string;
+  /**
+   * If true, after an embedding operation the SDK will re-fetch the note from
+   * the API to obtain updated embedded / embedded_at fields. Default: false
+   * (we optimistically set embedded=true on the returned note instead).
+   */
+  refreshNoteAfterEmbed?: boolean;
 }
 
 export interface NoteInput {
@@ -30,6 +47,10 @@ export interface Note extends NoteInput {
   id: string;
   createdAt: string;
   updatedAt: string;
+  // Embedding / status metadata (added by backend; optional for backward compatibility)
+  embedded?: boolean;
+  embedded_at?: string | null;
+  status?: string; // AVAILABLE | ERROR | DELETED
 }
 
 export interface QuestionRequest {
@@ -61,12 +82,14 @@ export interface Message {
   thread_id: string;
   content: string;
   response: string;
+  source?: string | null; // retrieval group id
 }
 
 export interface MessageInput {
   thread_id: string;
   content?: string;
   response?: string;
+  source?: string | null;
 }
 
 // Stateful chat send (user message -> assistant reply persisted) ---------------------------------
@@ -84,6 +107,15 @@ export interface ChatSendResponse {
   response: string;     // assistant reply
   model: string;        // resolved model
   usage: Record<string, any>; // coarse metrics (message counts etc.)
+  source_id?: string | null; // retrieval group id
+  sources?: Array<{ note_id: string; quote: string }>;
+}
+
+// Retrieval source rows (optional convenience export for consumers)
+export interface Source {
+  id: string; // group id (retrieval group id)
+  note_id: string;
+  quote: string;
 }
 
 export interface Paginated<T> {

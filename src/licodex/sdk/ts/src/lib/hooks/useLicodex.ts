@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createLicodexClient, LicodexClient } from '../client';
-import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID } from '../types';
+import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID, Source } from '../types';
 
 interface UseLicodexOptions extends LicodexConfig {}
 
@@ -19,6 +19,9 @@ export interface UseLicodexReturn {
   createNote: (input: NoteInput) => Promise<Note | undefined>;
   updateNote: (id: string, input: Partial<NoteInput>) => Promise<Note | undefined>;
   deleteNote: (id: string) => Promise<string | undefined>;
+  embedNote: (id: string) => Promise<void>;
+  retryEmbedNote: (id: string) => Promise<void>;
+  embeddingState: Record<string, 'idle' | 'embedding' | 'error' | 'embedded'>; // ephemeral UI state
   ask: (req: QuestionRequest) => Promise<QuestionAnswer | undefined>;
   asking: boolean;
   answer?: QuestionAnswer;
@@ -31,6 +34,8 @@ export interface UseLicodexReturn {
   loadMessages: (threadId: string) => void;
   createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
   sendChatMessage: (threadId: string, content: string) => Promise<Message | undefined>;
+  loadSources: (groupId: string) => Promise<Source[] | undefined>;
+  sourcesByGroup: Record<string, Source[]>;
 }
 
 export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
@@ -44,6 +49,8 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   const [threads, setThreads] = useState<AsyncState<Thread[]>>({ loading: false });
   const [messages, setMessages] = useState<AsyncState<Message[]>>({ loading: false });
   const [asking, setAsking] = useState(false);
+  const [embeddingState, setEmbeddingState] = useState<Record<string, 'idle' | 'embedding' | 'error' | 'embedded'>>({});
+  const [sourcesByGroup, setSourcesByGroup] = useState<Record<string, Source[]>>({});
 
   const loadNotes = useCallback(async () => {
     setNotes((s: AsyncState<Note[]>) => ({ ...s, loading: true, error: undefined }));
@@ -87,6 +94,10 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       try {
         const n = await client.createNote(input);
         await loadNotes();
+        // Initialize embedding state for new note if backend already flags it embedded
+        if (n) {
+          setEmbeddingState(s => ({ ...s, [n.id]: n.embedded ? 'embedded' : 'idle' }));
+        }
         return n;
       } catch (e) {
         console.error(e);
@@ -165,15 +176,32 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       // After sending, refresh messages for that thread so UI reflects persisted history
       await loadMessages(threadId);
       // Return a Message-shaped object (message_id maps to id) for convenience
-      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response } as Message;
+      if (resp.source_id && resp.sources?.length) {
+        const gid = resp.source_id as string;
+        setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote })) }));
+      }
+      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.source_id } as Message;
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
+
+  const loadSources = useCallback(async (groupId: string) => {
+    if (!groupId) return [];
+    if (sourcesByGroup[groupId]) return sourcesByGroup[groupId];
+    try {
+      const rows = await client.listSources(groupId);
+      setSourcesByGroup(s => ({ ...s, [groupId]: rows }));
+      return rows;
+    } catch (e) { console.error(e); }
+  }, [client, sourcesByGroup]);
 
   const updateNote = useCallback(
     async (id: string, input: Partial<NoteInput>) => {
       try {
         const n = await client.updateNote(id, input);
         await loadNotes();
+        if (n) {
+          setEmbeddingState(s => ({ ...s, [n.id]: n.embedded ? 'embedded' : 'idle' }));
+        }
         return n;
       } catch (e) {
         console.error(e);
@@ -194,6 +222,53 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     },
     [client, loadNotes]
   );
+
+  const embedNote = useCallback(async (id: string) => {
+    // Race condition safeguard: after creating a note we may call embedNote before loadNotes() completes.
+    // Attempt to find in local cache first; if missing, fetch directly from API.
+    let note = notes.data?.find(n => n.id === id);
+    if (!note) {
+      try {
+        note = await client.getNote(id);
+      } catch {
+        return; // Can't embed without the note content
+      }
+    }
+    setEmbeddingState(s => ({ ...s, [id]: 'embedding' }));
+    try {
+      // First delete old embedding (safe even if none)
+      try { await client.deleteNoteEmbedding(id); } catch { /* ignore */ }
+      await client.embedNote(note);
+      // Poll status endpoint every 1s until embedded or timeout (30s)
+      const started = Date.now();
+      const timeoutMs = 30000;
+      let done = false;
+      while (!done && Date.now() - started < timeoutMs) {
+        await new Promise(r => setTimeout(r, 1000));
+        const st = await client.getEmbeddingStatus(id);
+        if (st?.embedded) {
+          done = true;
+          setEmbeddingState(s => ({ ...s, [id]: 'embedded' }));
+          break;
+        }
+      }
+      if (!done) {
+        // Timed out -> keep spinner but mark as error for now
+        setEmbeddingState(s => ({ ...s, [id]: 'error' }));
+      } else {
+        await loadNotes();
+      }
+    } catch (e) {
+      console.error(e);
+      setEmbeddingState(s => ({ ...s, [id]: 'error' }));
+      // Mark note status ERROR for visibility (best-effort)
+      try { await client.updateNote(id, { content: note.content }); } catch { /* ignore */ }
+    }
+  }, [client, notes.data, loadNotes]);
+
+  const retryEmbedNote = useCallback(async (id: string) => {
+    await embedNote(id);
+  }, [embedNote]);
 
   const ask = useCallback(
     async (req: QuestionRequest) => {
@@ -222,6 +297,9 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       createNote,
       updateNote,
       deleteNote,
+  embedNote,
+  retryEmbedNote,
+  embeddingState,
       ask,
       asking,
       answer,
@@ -234,7 +312,9 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       loadMessages,
       createMessage,
       sendChatMessage,
+      loadSources,
+      sourcesByGroup,
     }),
-    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage]
+    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage, embedNote, retryEmbedNote, embeddingState, loadSources, sourcesByGroup]
   );
 }

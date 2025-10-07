@@ -13,6 +13,7 @@ from licodex.api.routers import (
     streams,
     debug,
     notes,
+    sources,
 )
 
 settings = get_settings()
@@ -39,6 +40,7 @@ app.include_router(chat.router, prefix=settings.api_prefix)
 app.include_router(streams.router, prefix=settings.api_prefix)
 app.include_router(debug.router, prefix=settings.api_prefix)
 app.include_router(notes.router, prefix=settings.api_prefix)
+app.include_router(sources.router, prefix=settings.api_prefix)
 
 @app.get("/")
 async def root():

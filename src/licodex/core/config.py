@@ -3,9 +3,6 @@ from pydantic import Field, AliasChoices, SecretStr
 from functools import lru_cache
 from typing import Optional
 
-# LOCAL_modelhub=nn-ai-marketplace
-# LOCAL_modelhub_base_url=https://api.marketplace.novo-genai.com/v1
-
 class Settings(BaseSettings):
     # API
     app_name: str = Field(default="licodex-api", validation_alias=AliasChoices("APP_NAME", "LICODEX_APP_NAME"))
@@ -28,17 +25,17 @@ class Settings(BaseSettings):
 
     # External model / AI marketplace configuration
     # The API key intentionally has no default and should only come from the environment (.env)
-    modelhub_api_key: SecretStr | None = Field(
+    modelhub_api_key: Optional[SecretStr] = Field(
         default=None,
         validation_alias=AliasChoices("MODELHUB_API_KEY"),
         description="Secret API key for external AI marketplace provider",
     )
-    modelhub_base_url: str | None = Field(
+    modelhub_base_url: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("MODELHUB_BASE_URL"),
         description="Base URL for model provider / marketplace",
     )
-    modelhub: str | None = Field(
+    modelhub: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("MODELHUB"),
         description="Logical model provider identifier",
@@ -48,6 +45,80 @@ class Settings(BaseSettings):
         default="openai_gpt4o_128k",
         validation_alias=AliasChoices("CHAT_COMPLETION_MODEL"),
         description="Default model identifier used for chat completion endpoints when a model isn't explicitly supplied.",
+    )
+
+    # Milvus / Vector store + embeddings related configuration
+    # Milvus connection (used by collection setup utilities and any runtime vector ops)
+    milvus_host: Optional[str] = Field(
+        default="licodex-milvus",
+        validation_alias=AliasChoices("MILVUS_HOST"),
+        description="Milvus host (hostname or service name)."
+    )
+    milvus_http_port: Optional[int] = Field(
+        default=19530,
+        validation_alias=AliasChoices("MILVUS_PORT"),
+        description="Milvus HTTP / gRPC port"
+    )
+    milvus_connect_timeout: float = Field(
+        default=60.0,
+        validation_alias=AliasChoices("MILVUS_CONNECT_TIMEOUT"),
+        description="Maximum seconds to wait for initial Milvus connection before failing."
+    )
+    milvus_connect_interval: float = Field(
+        default=2.0,
+        validation_alias=AliasChoices("MILVUS_CONNECT_INTERVAL"),
+        description="Seconds between retry attempts while establishing initial Milvus connection."
+    )
+
+    # label: text-embedding-ada-002
+    rag_embedding_model: Optional[str] = Field(
+        default="openai_text_embedding_ada",
+        validation_alias=AliasChoices("EMBEDDING_MODEL"),
+        description="Embedding model name used for RAG / vector creation."
+    )
+    rag_embedding_model_output: Optional[int] = Field(
+        default=1536,
+        validation_alias=AliasChoices("EMBEDDING_MODEL_OUTPUT"),
+        description="Expected embedding vector dimension for validation."
+    )
+
+    # Object storage / S3 for embeddings artifact persistence (optional)
+    s3_embeddings_endpoint: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_ENDPOINT"),
+        description="Custom S3 endpoint (for MinIO/local)."
+    )
+    s3_embeddings_bucket_name: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_BUCKET", "S3_EMBEDDINGS_BUCKET_NAME"),
+        description="Target S3 bucket for embedding binary/object storage."
+    )
+    s3_embeddings_region: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_REGION"),
+        description="Region for S3 embeddings bucket (if required by provider)."
+    )
+    s3_embeddings_access_key_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_ACCESS_KEY", "S3_EMBEDDINGS_ACCESS_KEY_ID"),
+        description="Access key ID for S3 embeddings bucket."
+    )
+    s3_embeddings_secret_access_key: Optional[SecretStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_SECRET_KEY", "S3_EMBEDDINGS_SECRET_ACCESS_KEY"),
+        description="Secret access key for S3 embeddings bucket."
+    )
+    s3_embeddings_force_path_style: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("S3_EMBEDDINGS_FORCE_PATH_STYLE"),
+        description="Force path-style addressing for S3 (true for many MinIO setups)."
+    )
+
+    # Generic embedding vector configuration (default dimension if unspecified)
+    embedding_default_dim: int = Field(
+        default=1536,
+        validation_alias=AliasChoices("EMBEDDING_DEFAULT_DIM", "VECTOR_DIM", "EMBEDDINGS_DIM"),
+        description="Default embedding vector dimension used when explicit collection config omits dim."
     )
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 

@@ -1,0 +1,12 @@
+import uuid
+from pydantic import BaseModel
+from .base import ORMBase
+
+class SourceRead(ORMBase):
+    id: uuid.UUID  # retrieval group id
+    note_id: uuid.UUID
+    quote: str
+
+class SourceGroupRead(BaseModel):
+    group_id: uuid.UUID
+    sources: list[SourceRead]
