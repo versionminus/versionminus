@@ -133,6 +133,37 @@ export class LicodexClient {
     return data;
   }
 
+  // Embeddings -----------------------------------------------------------------
+  async embedNote(note: Note, model = 'openai_text_embedding_ada'): Promise<any> { // backend will validate / override model if needed
+    // Provide parallel arrays with single element for note + user id
+    const payload = {
+      model,
+      input: note.content,
+      note_ids: [note.id],
+      user_ids: [note.user_id],
+      statuses: ['EMBEDDING'], // transient; backend will flip to EMBEDDED
+      upsert: true,
+    } as any;
+    const { data } = await this.axios.post(`${API_PREFIX}/embeddings/`, payload);
+    return data;
+  }
+
+  async deleteNoteEmbedding(noteId: string): Promise<void> {
+    await this.axios.delete(`${API_PREFIX}/embeddings/${noteId}`);
+  }
+
+  async getEmbeddingStatus(noteId: string): Promise<{ note_id: string; embedded: boolean; embedded_at?: string | null; status: string; } | undefined> {
+    try {
+      const { data, status } = await this.axios.get(`${API_PREFIX}/embeddings/status/${noteId}`);
+      // 200 -> embedded, 202 -> still embedding; return data either way so caller can inspect.
+      if (status === 200 || status === 202) return data;
+      return undefined;
+    } catch (e: any) {
+      if (e?.response?.status === 404) return undefined;
+      throw e;
+    }
+  }
+
   // Questions (RAG)
   async ask(request: QuestionRequest): Promise<QuestionAnswer> {
     // Temporary mapping: backend does not yet implement a dedicated RAG endpoint.

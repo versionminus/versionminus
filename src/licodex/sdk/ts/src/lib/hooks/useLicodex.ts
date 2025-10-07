@@ -19,6 +19,9 @@ export interface UseLicodexReturn {
   createNote: (input: NoteInput) => Promise<Note | undefined>;
   updateNote: (id: string, input: Partial<NoteInput>) => Promise<Note | undefined>;
   deleteNote: (id: string) => Promise<string | undefined>;
+  embedNote: (id: string) => Promise<void>;
+  retryEmbedNote: (id: string) => Promise<void>;
+  embeddingState: Record<string, 'idle' | 'embedding' | 'error' | 'embedded'>; // ephemeral UI state
   ask: (req: QuestionRequest) => Promise<QuestionAnswer | undefined>;
   asking: boolean;
   answer?: QuestionAnswer;
@@ -44,6 +47,7 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
   const [threads, setThreads] = useState<AsyncState<Thread[]>>({ loading: false });
   const [messages, setMessages] = useState<AsyncState<Message[]>>({ loading: false });
   const [asking, setAsking] = useState(false);
+  const [embeddingState, setEmbeddingState] = useState<Record<string, 'idle' | 'embedding' | 'error' | 'embedded'>>({});
 
   const loadNotes = useCallback(async () => {
     setNotes((s: AsyncState<Note[]>) => ({ ...s, loading: true, error: undefined }));
@@ -174,6 +178,9 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       try {
         const n = await client.updateNote(id, input);
         await loadNotes();
+        if (n) {
+          setEmbeddingState(s => ({ ...s, [n.id]: n.embedded ? 'embedded' : 'idle' }));
+        }
         return n;
       } catch (e) {
         console.error(e);
@@ -194,6 +201,45 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     },
     [client, loadNotes]
   );
+
+  const embedNote = useCallback(async (id: string) => {
+    const note = notes.data?.find(n => n.id === id);
+    if (!note) return;
+    setEmbeddingState(s => ({ ...s, [id]: 'embedding' }));
+    try {
+      // First delete old embedding (safe even if none)
+      try { await client.deleteNoteEmbedding(id); } catch { /* ignore */ }
+      await client.embedNote(note);
+      // Poll status endpoint every 1s until embedded or timeout (30s)
+      const started = Date.now();
+      const timeoutMs = 30000;
+      let done = false;
+      while (!done && Date.now() - started < timeoutMs) {
+        await new Promise(r => setTimeout(r, 1000));
+        const st = await client.getEmbeddingStatus(id);
+        if (st?.embedded) {
+          done = true;
+          setEmbeddingState(s => ({ ...s, [id]: 'embedded' }));
+          break;
+        }
+      }
+      if (!done) {
+        // Timed out -> keep spinner but mark as error for now
+        setEmbeddingState(s => ({ ...s, [id]: 'error' }));
+      } else {
+        await loadNotes();
+      }
+    } catch (e) {
+      console.error(e);
+      setEmbeddingState(s => ({ ...s, [id]: 'error' }));
+      // Mark note status ERROR for visibility (best-effort)
+      try { await client.updateNote(id, { content: note.content }); } catch { /* ignore */ }
+    }
+  }, [client, notes.data, loadNotes]);
+
+  const retryEmbedNote = useCallback(async (id: string) => {
+    await embedNote(id);
+  }, [embedNote]);
 
   const ask = useCallback(
     async (req: QuestionRequest) => {
@@ -222,6 +268,9 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       createNote,
       updateNote,
       deleteNote,
+  embedNote,
+  retryEmbedNote,
+  embeddingState,
       ask,
       asking,
       answer,
@@ -235,6 +284,6 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       createMessage,
       sendChatMessage,
     }),
-    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage]
+    [answer, ask, asking, client, currentUser, loadUser, createNote, deleteNote, loadNotes, notes, updateNote, threads, loadThreads, createThread, updateThread, deleteThread, messages, loadMessages, createMessage, sendChatMessage, embedNote, retryEmbedNote, embeddingState]
   );
 }

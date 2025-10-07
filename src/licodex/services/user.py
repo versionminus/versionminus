@@ -41,7 +41,11 @@ async def _email_exists(session: AsyncSession, email: str) -> bool:
 async def create_user(session: AsyncSession, data: UserCreate) -> User:
     if await _email_exists(session, data.email):
         raise DuplicateEmailError()
-    user = User(email=data.email, role=data.role)
+    # If an id was explicitly provided (test/tool use-case), honor it.
+    if getattr(data, "id", None):
+        user = User(id=data.id, email=data.email, role=data.role)  # type: ignore[arg-type]
+    else:
+        user = User(email=data.email, role=data.role)
     session.add(user)
     await session.flush()
     return user

@@ -56,10 +56,21 @@ async def update(
     status: NoteStatus | None = None,
     embedded_at=None,
 ) -> Note:
+    content_changed = content is not None and content != note.content
     if content is not None:
         note.content = content
-    # Any content update should reset embedding status unless explicitly overridden
-    if content is not None and embedded is None:
+    # Any content update should reset embedding status unless explicitly overridden and delete old embeddings from Milvus
+    if content_changed and embedded is None:
+        # Best-effort Milvus deletion so re-embedding generates fresh vectors
+        try:  # pragma: no cover - external system
+            from licodex.core.milvus.milvus import get_milvus
+            from pymilvus import Collection, utility
+            get_milvus()
+            if utility.has_collection("notes"):
+                coll = Collection("notes")
+                coll.delete(expr=f"note_id == '{note.id}'")
+        except Exception:
+            pass
         note.embedded = False
         note.embedded_at = None
     if embedded is not None:

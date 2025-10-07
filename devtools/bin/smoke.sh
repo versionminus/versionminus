@@ -28,6 +28,10 @@ Options:
 
 Environment overrides:
   BASE_URL, API_PREFIX, THREADS_PER_USER, MESSAGES_PER_THREAD
+  FORCED_USER_IDS   Comma-separated list mapping emails to fixed IDs. Example:
+                    FORCED_USER_IDS="diogo@licodex.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4,nuno@licodex.com=11111111-2222-3333-4444-555555555555"
+                    If provided, the script will attempt to create users with these IDs (by sending id in POST).
+                    If the API rejects custom IDs and a user already exists (409), the existing ID MUST match the forced one or the script fails.
 USAGE
 }
 
@@ -92,6 +96,26 @@ USERS=(
   "nuno@licodex.com"
   "shan@licodex.com"
 )
+
+FORCED_USER_IDS="diogo@licodex.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4"
+
+# Optional forced user IDs (email -> id) provided via FORCED_USER_IDS env var
+# Format: email1=id1,email2=id2
+declare -A FORCED_IDS
+if [[ -n "${FORCED_USER_IDS:-}" ]]; then
+  IFS=',' read -r -a __forced_pairs <<<"$FORCED_USER_IDS"
+  for __pair in "${__forced_pairs[@]}"; do
+    [[ -z "$__pair" ]] && continue
+    if [[ "$__pair" =~ ^([^=]+)=(.+)$ ]]; then
+      __f_email="${BASH_REMATCH[1]}"
+      __f_id="${BASH_REMATCH[2]}"
+      FORCED_IDS["$__f_email"]="$__f_id"
+    else
+      log "Ignoring malformed FORCED_USER_IDS entry: $__pair"
+    fi
+  done
+  log "Forced user IDs active for: ${!FORCED_IDS[*]}"
+fi
 
 declare -A USER_IDS
 
@@ -163,18 +187,41 @@ fi
 
 log "Ensuring users exist (${USERS[*]})"
 for email in "${USERS[@]}"; do
-  curl_json_status POST "${API_PREFIX}/users/" "{\"email\":\"$email\",\"role\":\"user\"}"
+  desired_id="${FORCED_IDS[$email]:-}"
+  if [[ -n "$desired_id" ]]; then
+    log "Attempting creation with forced id for $email: $desired_id"
+    payload="{\"id\":\"$desired_id\",\"email\":\"$email\",\"role\":\"user\"}"
+  else
+    payload="{\"email\":\"$email\",\"role\":\"user\"}"
+  fi
+
+  curl_json_status POST "${API_PREFIX}/users/" "$payload"
   body="$CURL_BODY"
   status="$CURL_STATUS"
+
+  # If we tried with forced id and got an unexpected error (not 201/409), retry without id once
+  if [[ -n "$desired_id" && "$status" != "201" && "$status" != "409" ]]; then
+    log "Create with explicit id returned $status. Retrying without id for $email (API may not allow client-specified IDs)."
+    curl_json_status POST "${API_PREFIX}/users/" "{\"email\":\"$email\",\"role\":\"user\"}"
+    body="$CURL_BODY"
+    status="$CURL_STATUS"
+  fi
+
   if [[ "$status" == "201" ]]; then
-    user_id=$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' <<<"$body")
+    user_id=$(sed -n 's/.*"id":"\([^" ]*\)".*/\1/p' <<<"$body")
     [[ -n "$user_id" ]] || fail "Could not parse new user id for $email"
+    if [[ -n "$desired_id" && "$user_id" != "$desired_id" ]]; then
+      fail "Forced id mismatch for $email: expected $desired_id got $user_id"
+    fi
     log "Created user $email ($user_id)"
   elif [[ "$status" == "409" ]]; then
     # Already exists: fetch list and extract id via Python for robustness
     users_json=$(curl_json GET "${API_PREFIX}/users/") || fail "list users failed while resolving existing user $email"
-  user_id=$(printf '%s' "$users_json" | /usr/bin/env python3 "$HELPER" user-id --email "$email")
+    user_id=$(printf '%s' "$users_json" | /usr/bin/env python3 "$HELPER" user-id --email "$email")
     [[ -n "$user_id" ]] || fail "Could not resolve existing user id for $email"
+    if [[ -n "$desired_id" && "$user_id" != "$desired_id" ]]; then
+      fail "Existing user id for $email ($user_id) does not match forced id $desired_id"
+    fi
     log "User already existed $email ($user_id)"
   else
     fail "Unexpected status creating user $email: $status ($body)"
@@ -183,16 +230,12 @@ for email in "${USERS[@]}"; do
 done
 
 created_thread_ids=()
-# Message creation disabled; keep array for compatibility (unused)
-created_message_ids=()
-
-ts_base=$(date +%s%N)
 
 for email in "${USERS[@]}"; do
   user_id=${USER_IDS[$email]}
   log "Creating threads for $email (user_id=$user_id)"
   for ((t=1; t<=THREADS_PER_USER; t++)); do
-    thread_title="smoke-${ts_base}-${t}-$(echo "$email" | tr '@.' '--')"
+    thread_title="${t}-$(echo "$email" | tr '@.' '--')"
     thread_json=$(curl_json POST "${API_PREFIX}/threads/" "{\"title\":\"$thread_title\",\"user_id\":\"$user_id\"}") || fail "thread create failed for $email"
     thread_id=$(sed -n 's/.*"id":"\([^"]*\)".*/\1/p' <<<"$thread_json")
     [[ -n "$thread_id" ]] || fail "Could not extract thread id ($email t=$t)"

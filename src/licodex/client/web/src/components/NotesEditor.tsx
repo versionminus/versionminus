@@ -8,11 +8,12 @@ interface Props {
   onUpdate: (id: string, content: string) => Promise<Note | void>;
   onDelete: (id: string) => Promise<void>;
   onClose: () => void;            // Close editor (without saving)
+  onEmbed?: (id: string) => void; // Trigger embedding after save
 }
 
 // Full screen editor that appears in the center content area.
 // Replaces the previous fullscreen mode embedded inside NotesPanel.
-export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose }: Props) {
+export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose, onEmbed }: Props) {
   const isNew = !note; // Creating a new note when no note provided.
   const [content, setContent] = useState(note?.content || '');
   const [saving, setSaving] = useState(false);
@@ -25,15 +26,17 @@ export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose }: Pro
     try {
       setSaving(true);
       if (isNew) {
-        await onCreate(content);
+        const created = await onCreate(content);
+        if (created && onEmbed) onEmbed(created.id);
       } else if (note) {
-        await onUpdate(note.id, content);
+        const updated = await onUpdate(note.id, content);
+        if (updated && onEmbed) onEmbed(updated.id);
       }
       onClose();
     } finally {
       setSaving(false);
     }
-  }, [content, isNew, note, onCreate, onUpdate, onClose]);
+  }, [content, isNew, note, onCreate, onUpdate, onClose, onEmbed]);
 
   const handleDelete = useCallback(async () => {
     if (!note) return;

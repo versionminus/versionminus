@@ -15,3 +15,4 @@ This repository contains a live coding exercise for building a GenAI powered not
 - nginx for CORS
 - verify if we can remove licodex.core.milvus
 - (embeddings router) verify different ordering of payload arrays: Silent misalignment of data. Always derive order from `coll.schema.fields`
+- create a pluggable provider system (Provider enum + factory)

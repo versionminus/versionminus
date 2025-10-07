@@ -30,6 +30,10 @@ export interface Note extends NoteInput {
   id: string;
   createdAt: string;
   updatedAt: string;
+  // Embedding / status metadata (added by backend; optional for backward compatibility)
+  embedded?: boolean;
+  embedded_at?: string | null;
+  status?: string; // AVAILABLE | ERROR | DELETED
 }
 
 export interface QuestionRequest {

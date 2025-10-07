@@ -19,6 +19,8 @@ export function App() {
   const [showThreads, setShowThreads] = useState(true);
   const [showNotes, setShowNotes] = useState(true);
   const [noteEditorOpen, setNoteEditorOpen] = useState(false); // Controls display of center NotesEditor
+  const [selectedNoteIdsForContext, setSelectedNoteIdsForContext] = useState<string[]>([]);
+  const [notesFullscreen, setNotesFullscreen] = useState(false);
 
   // Do NOT auto-select a note; we want initial quotes view if nothing chosen.
   // If you still want earliest note auto selection, re-enable below.
@@ -85,6 +87,7 @@ export function App() {
               onCreate={handleCreateNote}
               onUpdate={handleUpdateNote}
               onDelete={handleDeleteNote}
+              onEmbed={(id: string) => { void licodex.embedNote(id); }}
               onClose={() => { setNoteEditorOpen(false); if (!selectedNote) { /* closing new note draft */ } }}
             />
           )}
@@ -99,6 +102,11 @@ export function App() {
               selected={selectedNote?.id}
               onSelect={(n: Note) => { setSelectedNote(n); setSelectedThreadId(null); setNoteEditorOpen(true); }}
               onNew={() => { setSelectedNote(null); setSelectedThreadId(null); setNoteEditorOpen(true); }}
+              onEmbed={(id: string) => { void licodex.embedNote(id); }}
+              embeddingState={licodex.embeddingState}
+              onSelectionChange={(ids) => setSelectedNoteIdsForContext(ids)}
+              fullscreen={notesFullscreen}
+              onToggleFullscreen={() => setNotesFullscreen(f => !f)}
             />
           </div>
         )}

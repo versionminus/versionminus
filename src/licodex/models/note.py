@@ -7,7 +7,9 @@ import enum
 
 
 class NoteStatus(str, enum.Enum):
+    """TODO semantics, ERROR means it couldn't be embedded."""
     AVAILABLE = "AVAILABLE"
+    ERROR = "ERROR"
     DELETED = "DELETED"
 
 

@@ -7,7 +7,7 @@ index makes nearest-neighbor search fast ->
 search returns candidates ->
 get original note content from pg
 """
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from typing import List, Optional
 import hashlib
 from datetime import datetime
@@ -22,6 +22,7 @@ from licodex.schemas.embeddings import EmbeddingRequest, SearchRequest, HealthRe
 from licodex.api import deps
 from licodex.models.note import Note, NoteStatus
 from sqlalchemy import select
+from uuid import UUID
 
 MAX_CHUNK_TOKENS = 800  # simple heuristic for splitting very long notes
 CHUNK_OVERLAP = 50
@@ -183,6 +184,39 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
             pass
 
     return {"model": model_name, "data": vectors, "dimensions": dim, "collection": collection_name, "count": len(vectors)}
+
+
+@router.delete("/{note_id}", summary="Delete embeddings for a note (and reset status)", status_code=204)
+async def delete_note_embeddings(note_id: UUID, session: AsyncSession = Depends(deps.get_db)):
+    """Delete all embeddings in the default collection for the given note id.
+
+    Side effects:
+      - Removes vectors from Milvus (best-effort; ignores errors)
+      - Resets the note's embedded flag & timestamp and (if previously ERROR) sets status back to AVAILABLE
+    """
+    # Load note first so we can update state even if Milvus deletion fails
+    stmt = select(Note).where(Note.id == note_id)
+    res = await session.execute(stmt)
+    note = res.scalar_one_or_none()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    # Attempt Milvus deletion
+    try:  # pragma: no cover - external system interaction
+        get_milvus()
+        if utility.has_collection("notes"):
+            coll = Collection("notes")
+            coll.delete(expr=f"note_id == '{note_id}'")
+    except Exception:
+        # We purposely swallow errors to keep API idempotent
+        pass
+    # Reset embedding metadata
+    note.embedded = False
+    note.embedded_at = None
+    if note.status == NoteStatus.ERROR:
+        note.status = NoteStatus.AVAILABLE
+    await session.flush()
+    await session.commit()
+    return None
 
 
 @router.post("/search", summary="Vector similarity search against a collection")
@@ -350,3 +384,32 @@ async def list_all_vectors():
         collections_out.append(info)
 
     return {"collections": collections_out, "total_vectors_returned": total_vectors, "max_per_collection": MAX_VECTORS_PER_COLLECTION}
+
+
+@router.get("/status/{note_id}", summary="Get embedding status for a note")
+async def embedding_status(note_id: UUID, session: AsyncSession = Depends(deps.get_db)):
+    """Return the embedding status for a note.
+
+    Semantics:
+      - 200 OK  -> note exists AND note.embedded == True (embedded_at populated)
+      - 202 Accepted -> note exists BUT embedding not yet finished (embedded == False)
+      - 404 Not Found -> note does not exist
+
+    The body shape is identical for 200 and 202 so callers can inspect fields if desired.
+    """
+    stmt = select(Note).where(Note.id == note_id)
+    res = await session.execute(stmt)
+    note = res.scalar_one_or_none()
+    if not note:
+        raise HTTPException(status_code=404, detail="Note not found")
+    body = {
+        "note_id": str(note.id),
+        "embedded": bool(note.embedded),
+        "embedded_at": note.embedded_at,
+        "status": note.status.value if hasattr(note.status, "value") else str(note.status),
+    }
+    if note.embedded:
+        return body  # 200
+    # Pending
+    from fastapi.responses import JSONResponse
+    return JSONResponse(status_code=status.HTTP_202_ACCEPTED, content=body)
