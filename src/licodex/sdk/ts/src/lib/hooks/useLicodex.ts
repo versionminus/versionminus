@@ -34,7 +34,7 @@ export interface UseLicodexReturn {
   loadMessages: (threadId: string) => void;
   createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
   sendChatMessage: (threadId: string, content: string) => Promise<Message | undefined>;
-  loadSources: (groupId: string) => Promise<Source[] | undefined>;
+  loadSources: (sourcesId: string) => Promise<Source[] | undefined>;
   sourcesByGroup: Record<string, Source[]>;
 }
 
@@ -184,12 +184,12 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
 
-  const loadSources = useCallback(async (groupId: string) => {
-    if (!groupId) return [];
-    if (sourcesByGroup[groupId]) return sourcesByGroup[groupId];
+  const loadSources = useCallback(async (sourcesId: string) => {
+    if (!sourcesId) return [];
+    if (sourcesByGroup[sourcesId]) return sourcesByGroup[sourcesId];
     try {
-      const rows = await client.listSources(groupId);
-      setSourcesByGroup(s => ({ ...s, [groupId]: rows }));
+      const rows = await client.listSources(sourcesId);
+      setSourcesByGroup(s => ({ ...s, [sourcesId]: rows }));
       return rows;
     } catch (e) { console.error(e); }
   }, [client, sourcesByGroup]);

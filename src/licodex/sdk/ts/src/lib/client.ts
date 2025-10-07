@@ -229,10 +229,10 @@ export class LicodexClient {
     const { data } = await this.axios.post(`${API_PREFIX}/chat/send`, req);
     return data as ChatSendResponse;
   }
-  async listSources(groupId: string): Promise<Source[]> {
-    const { data } = await this.axios.get(`${API_PREFIX}/sources/${groupId}`);
+  async listSources(sourcesId: string): Promise<Source[]> {
+    const { data } = await this.axios.get(`${API_PREFIX}/sources/${sourcesId}`);
     // API returns array of source rows (each includes note_id, quote) but no explicit id per row.
-    return (data || []).map((r: any) => ({ id: groupId, note_id: r.note_id, quote: r.quote })) as Source[];
+    return (data || []).map((r: any) => ({ id: sourcesId, note_id: r.note_id, quote: r.quote })) as Source[];
   }
 
   // Threads

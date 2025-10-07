@@ -8,5 +8,5 @@ class SourceRead(ORMBase):
     quote: str
 
 class SourceGroupRead(BaseModel):
-    group_id: uuid.UUID
+    sources_id: uuid.UUID
     sources: list[SourceRead]

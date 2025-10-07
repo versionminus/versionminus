@@ -10,11 +10,11 @@ __all__ = [
     "list_sources",
 ]
 
-async def create_sources_for_group(session: AsyncSession, *, group_id: uuid.UUID, items: list[tuple[uuid.UUID, str]]):
-    return await source_repo.create_many(session, group_id=group_id, rows=items)
+async def create_sources_for_group(session: AsyncSession, *, sources_id: uuid.UUID, items: list[tuple[uuid.UUID, str]]):
+    return await source_repo.create_many(session, sources_id=sources_id, rows=items)
 
-async def list_sources(session: AsyncSession, group_id: uuid.UUID):
-    return await source_repo.list_by_group_id(session, group_id)
+async def list_sources(session: AsyncSession, sources_id: uuid.UUID):
+    return await source_repo.list_by_group_id(session, sources_id)
 
 async def retrieve_relevant_notes_stub(session: AsyncSession, *, user_query: str, limit: int = 3) -> list[tuple[uuid.UUID, str]]:
     """Naive retrieval implementation.

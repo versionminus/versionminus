@@ -210,7 +210,7 @@ async def chat_send(
     msg.response = assistant_reply  # type: ignore[attr-defined]
     # Persist sources rows for retrieval
     if retrieved_pairs:
-        await create_sources_for_group(session, group_id=retrieval_group_id, items=retrieved_pairs)
+        await create_sources_for_group(session, sources_id=retrieval_group_id, items=retrieved_pairs)
     await session.flush()
     await session.commit()
 

@@ -7,9 +7,9 @@ from licodex.schemas.source import SourceRead
 
 router = APIRouter(prefix="/sources", tags=["sources"])
 
-@router.get("/{group_id}", response_model=list[SourceRead], summary="List sources for a retrieval group id")
-async def get_sources(group_id: uuid.UUID, session: AsyncSession = Depends(deps.get_db)):
-    rows = await list_sources(session, group_id)
+@router.get("/{sources_id}", response_model=list[SourceRead], summary="List sources for a retrieval group id")
+async def get_sources(sources_id: uuid.UUID, session: AsyncSession = Depends(deps.get_db)):
+    rows = await list_sources(session, sources_id)
     if not rows:
         # 404 semantics: group id unknown
         raise HTTPException(status_code=404, detail="No sources found for id")
