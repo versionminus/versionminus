@@ -173,7 +173,7 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       // After sending, refresh messages for that thread so UI reflects persisted history
       await loadMessages(threadId);
       // Return a Message-shaped object (message_id maps to id) for convenience
-      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response } as Message;
+      return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.sources?.[0]?.id } as Message;
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
 

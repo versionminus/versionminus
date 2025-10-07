@@ -32,6 +32,7 @@ async def create_message(
     content: str = "",
     response: str = "",
     id: uuid.UUID | None = None,
+    source: uuid.UUID | None = None,
 ) -> Message:
     # Validate parent thread existence for clearer error semantics
     if not await thread_repo.get_by_id(session, thread_id):
@@ -42,6 +43,7 @@ async def create_message(
         content=content,
         response=response,
         id=id,
+        source=source,
     )
     return msg
 

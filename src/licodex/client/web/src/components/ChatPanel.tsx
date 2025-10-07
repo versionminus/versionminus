@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, ICON_SIZE } from './Icon';
 // Import from package root; deep path '@licodex/sdk/lib/hooks/useLicodex' does not exist in published package.
-import type { UseLicodexReturn, Note, Message } from '@licodex/sdk';
+import type { UseLicodexReturn, Note, Message, Source } from '@licodex/sdk';
 
 interface ChatLine { role: 'user' | 'assistant'; content: string; ts: number; }
 
@@ -18,6 +18,33 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
   const [localPending, setLocalPending] = useState<ChatLine[]>([]);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const appendLocal = useCallback((line: ChatLine) => setLocalPending(h => [...h, line]), []);
+  const [expandedSources, setExpandedSources] = useState<Record<string, Source[] | 'loading'>>({});
+
+  const toggleSources = useCallback(async (m: Message) => {
+    if (!m.source) return;
+    setExpandedSources(s => {
+      if (s[m.id]) {
+        const copy = { ...s };
+        delete copy[m.id];
+        return copy; // collapse
+      }
+      return { ...s, [m.id]: 'loading' };
+    });
+    try {
+      // fetch sources list by group id (m.source)
+      const res = await fetch(`${(licodex.client as any).config?.baseUrl || '/api'}/v1/sources/${m.source}`);
+      if (!res.ok) throw new Error('failed');
+      const data: Source[] = await res.json();
+      setExpandedSources(s => ({ ...s, [m.id]: data }));
+    } catch (e) {
+      console.error(e);
+      setExpandedSources(s => {
+        const copy = { ...s };
+        delete copy[m.id];
+        return copy;
+      });
+    }
+  }, [licodex.client]);
 
   const send = useCallback(async () => {
     if (!input.trim() || !selectedThreadId) return;
@@ -84,12 +111,39 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
         <>
           <div className="chat-history scrollbar-thin">
             {/* Persisted messages from backend */}
-            {licodex.messages.data?.map((m: Message) => (
-              <div key={m.id + m.response}>
-                <div className='chat-line-user'>you &gt; {m.content}</div>
-                {m.response && <div className='chat-line-bot'>licodex &gt; {m.response}</div>}
-              </div>
-            ))}
+            {licodex.messages.data?.map((m: Message) => {
+              const srcState = expandedSources[m.id];
+              return (
+                <div key={m.id + m.response}>
+                  <div className='chat-line-user'>you &gt; {m.content}</div>
+                  {m.response && (
+                    <div className='chat-line-bot'>
+                      licodex &gt; {m.response}
+                      {m.source && (
+                        <button
+                          className='btn tiny outline ml-4'
+                          style={{ marginLeft: 8 }}
+                          title='Show sources'
+                          onClick={() => void toggleSources(m)}
+                        >
+                          <Icon name='expand' size={12} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {srcState && (
+                    <div className='terminal-box mt-2'>
+                      {srcState === 'loading' && <div className='fade-text'>loading sources...</div>}
+                      {Array.isArray(srcState) && srcState.map(s => (
+                        <div key={s.note_id} className='source-line clickable' onClick={() => {/* TODO integrate open note selection via parent if needed */}}>
+                          {s.note_id}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
             {/* Optimistic local lines not yet persisted */}
             {localPending.map(l => (
               <div key={l.ts} className={l.role === 'user' ? 'chat-line-user' : 'chat-line-bot'}>

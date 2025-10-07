@@ -41,6 +41,7 @@ class ChatThreadMessageResponse(BaseModel):
     response: str
     model: str | None
     usage: dict
+    sources: list[dict] | None = None  # list of {id, note_id, quote}
 
 
 class ChatMessage(BaseModel):

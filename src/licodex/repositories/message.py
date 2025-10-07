@@ -49,6 +49,7 @@ async def create(
     content: str = "",
     response: str = "",
     id: uuid.UUID | None = None,
+    source: uuid.UUID | None = None,
 ) -> Message:
     """Create a new Message.
 
@@ -65,6 +66,7 @@ async def create(
         thread_id=thread_id,
         content=content,
         response=response,
+        source=source,
         **({"id": id} if id else {})
     )
     session.add(message)

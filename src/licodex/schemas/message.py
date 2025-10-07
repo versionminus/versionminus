@@ -6,6 +6,7 @@ class MessageCreate(BaseModel):
     thread_id: uuid.UUID
     content: str = ""
     response: str = ""
+    source: uuid.UUID | None = None
 
 
 class MessageRead(ORMBase):
@@ -13,8 +14,10 @@ class MessageRead(ORMBase):
     thread_id: uuid.UUID
     content: str
     response: str
+    source: uuid.UUID | None
 
 
 class MessageUpdate(BaseModel):
     content: str | None = None
     response: str | None = None
+    source: uuid.UUID | None = None
