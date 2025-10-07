@@ -76,10 +76,14 @@ button { font-family: inherit; }
 .prompt-input { flex: 1; }
 
 .note-list { overflow-y: auto; max-height: calc(100% - 48px); padding:0; margin:0; }
-.note-item { border: 1px solid var(--border); background: var(--bg-tertiary); padding: 6px 8px; border-radius: 0; cursor: pointer; display: flex; flex-direction: column; gap: 2px; position:relative; }
+.note-item { border: 1px solid var(--border); background: var(--bg-tertiary); padding: 6px 8px; border-radius: 0; cursor: pointer; display: flex; flex-direction: row; align-items:center; gap: 8px; position:relative; }
 .note-item + .note-item { border-top:none; }
 .note-item:hover { background: #262d36; }
 .note-item.active { outline: 2px solid var(--accent); }
+.note-select { font-size: 16px; line-height:1; width:18px; text-align:center; cursor:pointer; color: var(--text-secondary); }
+.note-select:hover { color: var(--text-primary); }
+.note-status { margin-left:auto; display:flex; align-items:center; justify-content:center; width:16px; }
+.note-status button.icon-btn { background:none; border:none; padding:0; cursor:pointer; }
 
 /* Thread selected highlight reused note-item class in threads panel */
 .thread-item.active { outline:2px solid var(--accent); background: #1a3421; }

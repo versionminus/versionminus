@@ -60,11 +60,11 @@ export function NotesPanel({ notesState, selected, onSelect, onNew, onEmbed, emb
                 onClick={() => onSelect(n)}
                 title={first}
               >
-                <div className="note-select" onClick={(e) => { e.stopPropagation(); toggleSelected(n.id); }}>
-                  {selectedIds.includes(n.id) ? '☑' : '☐'}
+                <div className="note-select" aria-label={selectedIds.includes(n.id) ? 'selected for context' : 'not selected'} onClick={(e) => { e.stopPropagation(); toggleSelected(n.id); }}>
+                  {selectedIds.includes(n.id) ? '◉' : '◯'}
                 </div>
-                <div className="note-status" onClick={(e) => e.stopPropagation()}>{renderStatusIcon(n)}</div>
                 <div className="note-title">{first}</div>
+                <div className="note-status" onClick={(e) => e.stopPropagation()}>{renderStatusIcon(n)}</div>
               </div>
             );
           })}
