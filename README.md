@@ -16,5 +16,11 @@ This repository contains a live coding exercise for building a GenAI powered not
 - verify if we can remove licodex.core.milvus
 - (embeddings router) verify different ordering of payload arrays: Silent misalignment of data. Always derive order from `coll.schema.fields`
 - retrieval
-    - retrieve_relevant_notes_stub?
-    - chat_send, is this duplicate with search?
+    - Return richer metadata (distance scores, highlight spans) to the chat layer.
+    - Switch to cosine similarity if you normalize vectors—currently hard-coded L2.
+    - nprobe fixed at 10; might need tuning or exposure as a parameter.
+    - No pagination; strictly top_k.
+    - search endpoint:
+        - Deduplicate by logical note_id if chunks exist, returning best match plus snippet (can this replace my quotes?)
+        - Support hybrid search (metadata + vector) in future.
+        - Include timing metrics (embedding latency, search latency) for observability.

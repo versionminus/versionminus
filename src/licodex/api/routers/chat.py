@@ -16,7 +16,9 @@ from licodex.services.message import (
     create_message as create_message_service,
     ThreadNotFoundError as MsgThreadNotFoundError,
 )
-from licodex.services.source import retrieve_relevant_notes_stub, create_sources_for_group
+from licodex.services.source import retrieve_relevant_notes, create_sources_for_group
+from licodex.schemas.embeddings import SearchRequest
+from licodex.api.routers.embeddings import search_embeddings as embeddings_search
 from licodex.core.config import get_settings
 
 from licodex.core.modelhub import get_modelhub_client, resolve_chat_model
@@ -162,10 +164,40 @@ async def chat_send(
 
     history_user_texts = [m.content for m in prior_messages if m.content]
 
-    # 3. Perform retrieval (stub) to collect contextual sources
+    # 3. Retrieval: attempt embeddings semantic search, fallback to stub heuristic
     import uuid as _uuid
     retrieval_group_id = _uuid.uuid4()
-    retrieved_pairs = await retrieve_relevant_notes_stub(session, user_query=payload.content)
+    retrieved_pairs: list[tuple[_uuid.UUID, str]] = []
+    try:  # pragma: no cover - external systems
+        sreq = SearchRequest(query=payload.content, top_k=6)
+        search_resp = await embeddings_search(sreq)
+        hits = (search_resp or {}).get("results", []) if isinstance(search_resp, dict) else []  # type: ignore[index]
+        seen_note_ids: set[_uuid.UUID] = set()
+        from licodex.repositories import note as note_repo
+        for h in hits:
+            if not isinstance(h, dict):
+                continue
+            nid_raw = h.get("note_id")
+            if not nid_raw:
+                continue
+            try:
+                nid = _uuid.UUID(str(nid_raw))
+            except Exception:
+                continue
+            if nid in seen_note_ids:
+                continue
+            note_obj = await note_repo.get_by_id(session, nid)
+            if not note_obj or not getattr(note_obj, "content", None):
+                continue
+            snippet = note_obj.content[:240].strip() or "(empty note)"
+            retrieved_pairs.append((nid, snippet))
+            seen_note_ids.add(nid)
+            if len(retrieved_pairs) >= 3:  # limit sources attached to message
+                break
+    except Exception:  # pragma: no cover
+        retrieved_pairs = []
+    if not retrieved_pairs:
+        retrieved_pairs = await retrieve_relevant_notes(session, user_query=payload.content)
 
     # 3b. Persist placeholder message (without response yet) including retrieval group id
     try:
@@ -179,7 +211,6 @@ async def chat_send(
     except MsgThreadNotFoundError:
         raise HTTPException(status_code=404, detail="Thread not found")
 
-    # 4. Generate stub / real assistant reply
     last_user = payload.content or (history_user_texts[-1] if history_user_texts else "")
     settings = get_settings()
     resolved_model, reason = resolve_chat_model(payload.model)
