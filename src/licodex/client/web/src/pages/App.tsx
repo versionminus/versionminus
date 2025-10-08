@@ -79,6 +79,14 @@ export function App() {
               selectedNote={null}
               selectedThreadId={selectedThreadId}
               onThreadDeleted={(id) => { if (selectedThreadId === id) setSelectedThreadId(null); }}
+              onOpenNote={(noteId) => {
+                const note = licodex.notes.data?.find(n => n.id === noteId) || null;
+                if (note) {
+                  setSelectedNote(note);
+                  setSelectedThreadId(null); // leave chat view
+                  setNoteEditorOpen(true);
+                }
+              }}
             />
           )}
           {!selectedThreadId && noteEditorOpen && (

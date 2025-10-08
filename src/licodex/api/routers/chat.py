@@ -167,7 +167,7 @@ async def chat_send(
     # 3. Retrieval: attempt embeddings semantic search, fallback to stub heuristic
     import uuid as _uuid
     retrieval_group_id = _uuid.uuid4()
-    retrieved_pairs: list[tuple[_uuid.UUID, str]] = []
+    retrieved_pairs: list[tuple[_uuid.UUID, str, float | None]] = []
     try:  # pragma: no cover - external systems
         sreq = SearchRequest(query=payload.content, top_k=6)
         search_resp = await embeddings_search(sreq)
@@ -190,13 +190,14 @@ async def chat_send(
             if not note_obj or not getattr(note_obj, "content", None):
                 continue
             snippet = note_obj.content[:240].strip() or "(empty note)"
-            retrieved_pairs.append((nid, snippet))
+            retrieved_pairs.append((nid, snippet, None))
             seen_note_ids.add(nid)
             if len(retrieved_pairs) >= 3:  # limit sources attached to message
                 break
     except Exception:  # pragma: no cover
         retrieved_pairs = []
     if not retrieved_pairs:
+        # Fallback retrieval (returns triples with distance where available)
         retrieved_pairs = await retrieve_relevant_notes(session, user_query=payload.content)
 
     # 3b. Persist placeholder message (without response yet) including retrieval group id
@@ -260,5 +261,5 @@ async def chat_send(
         model=resolved_model,
         usage=usage,
         source_id=retrieval_group_id,
-        sources=[{"note_id": str(n_id), "quote": quote} for (n_id, quote) in retrieved_pairs],
+        sources=[{"note_id": str(n_id), "quote": quote, "distance": dist} for (n_id, quote, dist) in retrieved_pairs],
     )

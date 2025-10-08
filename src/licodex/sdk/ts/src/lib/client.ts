@@ -231,8 +231,8 @@ export class LicodexClient {
   }
   async listSources(sourcesId: string): Promise<Source[]> {
     const { data } = await this.axios.get(`${API_PREFIX}/sources/${sourcesId}`);
-    // API returns array of source rows (each includes note_id, quote) but no explicit id per row.
-    return (data || []).map((r: any) => ({ id: sourcesId, note_id: r.note_id, quote: r.quote })) as Source[];
+    // API returns array of source rows (each includes note_id, quote, distance?) but no explicit id per row.
+    return (data || []).map((r: any) => ({ id: sourcesId, note_id: r.note_id, quote: r.quote, distance: r.distance })) as Source[];
   }
 
   // Threads

@@ -42,8 +42,8 @@ class ChatThreadMessageResponse(BaseModel):
     model: str | None
     usage: dict
     source_id: uuid.UUID | None = None  # retrieval group id
-    sources: list[dict] | None = None   # lightweight list of {note_id, quote}
-    sources: list[dict] | None = None  # list of {id, note_id, quote}
+    # list of {note_id, quote, distance?}
+    sources: list[dict] | None = None
 
 
 class ChatMessage(BaseModel):

@@ -9,7 +9,7 @@ __all__ = [
     "list_by_group_id",
 ]
 
-async def create_many(session: AsyncSession, *, sources_id: uuid.UUID, rows: Sequence[tuple[uuid.UUID, str]]):
+async def create_many(session: AsyncSession, *, sources_id: uuid.UUID, rows: Sequence[tuple]):
     """Bulk create Source rows for a retrieval event.
 
     Parameters:
@@ -19,8 +19,14 @@ async def create_many(session: AsyncSession, *, sources_id: uuid.UUID, rows: Seq
     Returns list[Source]
     """
     created: list[Source] = []
-    for note_id, quote in rows:
-        src = Source(id=sources_id, note_id=note_id, quote=quote)
+    for row in rows:
+        # Backward compatible: row may be (note_id, quote) or (note_id, quote, distance)
+        if len(row) == 2:
+            note_id, quote = row  # type: ignore
+            distance = None
+        else:
+            note_id, quote, distance = row  # type: ignore
+        src = Source(id=sources_id, note_id=note_id, quote=quote, distance=distance)
         session.add(src)
         created.append(src)
     await session.flush()

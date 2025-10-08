@@ -108,7 +108,7 @@ export interface ChatSendResponse {
   model: string;        // resolved model
   usage: Record<string, any>; // coarse metrics (message counts etc.)
   source_id?: string | null; // retrieval group id
-  sources?: Array<{ note_id: string; quote: string }>;
+  sources?: Array<{ note_id: string; quote: string; distance?: number }>;
 }
 
 // Retrieval source rows (optional convenience export for consumers)
@@ -116,6 +116,7 @@ export interface Source {
   id: string; // group id (retrieval group id)
   note_id: string;
   quote: string;
+  distance?: number; // optional semantic distance (lower=closer)
 }
 
 export interface Paginated<T> {

@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, ForeignKey, Text
+from sqlalchemy import String, ForeignKey, Text, Float
 from licodex.db.session import Base
 
 class Source(Base):
@@ -17,3 +17,5 @@ class Source(Base):
     id: Mapped[uuid.UUID] = mapped_column(index=True)
     note_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("note.id"), nullable=False, index=True)
     quote: Mapped[str] = mapped_column(Text, default="")
+    # Optional semantic distance (lower is closer). Null if retrieval used fallback heuristic.
+    distance: Mapped[float | None] = mapped_column(Float, nullable=True)

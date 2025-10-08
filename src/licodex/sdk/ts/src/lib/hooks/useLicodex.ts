@@ -178,7 +178,7 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       // Return a Message-shaped object (message_id maps to id) for convenience
       if (resp.source_id && resp.sources?.length) {
         const gid = resp.source_id as string;
-        setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote })) }));
+  setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote, distance: r.distance })) }));
       }
       return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.source_id } as Message;
     } catch (e) { console.error(e); }
