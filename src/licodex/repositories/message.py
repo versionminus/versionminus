@@ -59,6 +59,7 @@ async def create(
         content: user-provided content.
         response: optional assistant/system response.
         id: optional explicit UUID.
+        source: optional retrieval source group id.
 
     Returns the persisted Message (flushed, not committed).
     """

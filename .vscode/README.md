@@ -46,3 +46,4 @@ read the [docs](https://code.visualstudio.com/shortcuts/keyboard-shortcuts-macos
 | Zen Mode                       | `Cmd` + `K` `Z`                   |
 | inline copilot                 | `Cmd` + `I`                      |
 | open copilot                   | `Cmd` + `Shift` + `I`                      |
+| close copilot                   | `Cmd` + `Option` + `B`                      |

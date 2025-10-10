@@ -34,7 +34,7 @@ export interface UseLicodexReturn {
   loadMessages: (threadId: string) => void;
   createMessage: (threadId: string, content: string) => Promise<Message | undefined>;
   sendChatMessage: (threadId: string, content: string) => Promise<Message | undefined>;
-  loadSources: (groupId: string) => Promise<Source[] | undefined>;
+  loadSources: (sourcesId: string) => Promise<Source[] | undefined>;
   sourcesByGroup: Record<string, Source[]>;
 }
 
@@ -178,18 +178,18 @@ export function useLicodex(options: UseLicodexOptions): UseLicodexReturn {
       // Return a Message-shaped object (message_id maps to id) for convenience
       if (resp.source_id && resp.sources?.length) {
         const gid = resp.source_id as string;
-        setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote })) }));
+  setSourcesByGroup(s => ({ ...s, [gid]: resp.sources!.map(r => ({ id: gid, note_id: r.note_id, quote: r.quote, distance: r.distance })) }));
       }
       return { id: resp.message_id, thread_id: resp.thread_id, content: resp.content, response: resp.response, source: resp.source_id } as Message;
     } catch (e) { console.error(e); }
   }, [client, loadMessages]);
 
-  const loadSources = useCallback(async (groupId: string) => {
-    if (!groupId) return [];
-    if (sourcesByGroup[groupId]) return sourcesByGroup[groupId];
+  const loadSources = useCallback(async (sourcesId: string) => {
+    if (!sourcesId) return [];
+    if (sourcesByGroup[sourcesId]) return sourcesByGroup[sourcesId];
     try {
-      const rows = await client.listSources(groupId);
-      setSourcesByGroup(s => ({ ...s, [groupId]: rows }));
+      const rows = await client.listSources(sourcesId);
+      setSourcesByGroup(s => ({ ...s, [sourcesId]: rows }));
       return rows;
     } catch (e) { console.error(e); }
   }, [client, sourcesByGroup]);

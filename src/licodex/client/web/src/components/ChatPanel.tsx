@@ -10,8 +10,9 @@ interface Props {
   selectedNote: Note | null;
   selectedThreadId: string | null;
   onThreadDeleted?: (id: string) => void;
+  onOpenNote?: (noteId: string) => void; // open note in editor (from source click)
 }
-export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDeleted }: Props) {
+export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDeleted, onOpenNote }: Props) {
   const [input, setInput] = useState('');
   const [resetting, setResetting] = useState(false);
   // Local optimistic lines for instant UX before reload (persisted history comes from licodex.messages)
@@ -95,15 +96,15 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
           <div className="chat-history scrollbar-thin">
             {/* Persisted messages from backend */}
             {licodex.messages.data?.map((m: Message) => {
-              const groupId = m.source;
-              const cached = groupId ? licodex.sourcesByGroup[groupId] : undefined;
+              const sourcesId = m.source;
+              const cached = sourcesId ? licodex.sourcesByGroup[sourcesId] : undefined;
               return (
                 <div key={m.id + m.response}>
                   <div className='chat-line-user'>you &gt; {m.content}</div>
                   {m.response && (
                     <div className='chat-line-bot'>
                       licodex &gt; {m.response}
-                      {groupId && (
+                      {sourcesId && (
                         <button
                           className='btn tiny outline ml-4'
                           style={{ marginLeft: 8 }}
@@ -115,14 +116,28 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                       )}
                     </div>
                   )}
-                  {openSourcesFor === m.id && groupId && (
+                  {openSourcesFor === m.id && sourcesId && (
                     <div className='terminal-box mt-2'>
                       {!cached && <div className='fade-text'>loading sources...</div>}
-                      {cached && cached.map(s => (
-                        <div key={s.note_id} className='source-line clickable' onClick={() => { /* TODO integrate open note selection via parent */ }}>
-                          {s.note_id}
-                        </div>
-                      ))}
+                      {cached && cached.map(s => {
+                        const dist = typeof s.distance === 'number' ? s.distance.toFixed(3) : undefined;
+                        return (
+                          <div key={s.note_id} className='source-line'>
+                            <span
+                              className='source-note-id'
+                              title='Open note'
+                              onClick={() => onOpenNote?.(s.note_id)}
+                            >
+                              {s.note_id}
+                            </span>
+                            {dist && (
+                              <span className='badge distance-badge' title='Vector distance (lower is closer)'>
+                                {dist}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

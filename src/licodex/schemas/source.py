@@ -6,7 +6,8 @@ class SourceRead(ORMBase):
     id: uuid.UUID  # retrieval group id
     note_id: uuid.UUID
     quote: str
+    distance: float | None = None
 
 class SourceGroupRead(BaseModel):
-    group_id: uuid.UUID
+    sources_id: uuid.UUID
     sources: list[SourceRead]

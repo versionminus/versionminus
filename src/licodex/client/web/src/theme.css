@@ -155,4 +155,10 @@ button { font-family: inherit; }
 @keyframes pulseDot { 0% { transform: scale(0.8); opacity: 0.6;} 50% { transform: scale(1.2); opacity:1;} 100% { transform: scale(0.8); opacity:0.6; } }
 .pulse { animation: pulseDot 1s ease-in-out infinite; display:inline-block; }
 
+/* Retrieval sources in chat */
+.source-line { padding:2px 0; display:flex; align-items:center; gap:6px; font-size:inherit; }
+.source-note-id { cursor:pointer; font-weight:600; }
+.source-note-id:hover { text-decoration: underline; }
+.distance-badge { background:#233028; border-color:#2d3a30; color:#7ee787; font-weight:500; }
+
 /* Thread / note shared item adjustments now rely on inherited font size */
