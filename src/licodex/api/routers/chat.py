@@ -193,7 +193,8 @@ async def chat_send(
             if not note_obj or not getattr(note_obj, "content", None):
                 continue
             snippet = note_obj.content[:240].strip() or "(empty note)"
-            retrieved_pairs.append((nid, snippet, None))
+            distance = h.get("distance") if isinstance(h.get("distance"), (int, float)) else None
+            retrieved_pairs.append((nid, snippet, distance))
             seen_note_ids.add(nid)
             if len(retrieved_pairs) >= 3:  # limit sources attached to message
                 break
@@ -218,6 +219,29 @@ async def chat_send(
     last_user = payload.content or (history_user_texts[-1] if history_user_texts else "")
     settings = get_settings()
     resolved_model, reason = resolve_chat_model(payload.model)
+    # Build retrieval context (RAG augmentation) injected as a system message.
+    retrieval_context: str | None = None
+    if retrieved_pairs:
+        # Load system prompt from configured file path (caching contents in module-level singleton)
+        _sys_prompt: str | None = None
+        from licodex.core.config import get_settings as _gs
+        _p_settings = _gs()
+        import os
+        prompt_path = _p_settings.retrieval_system_prompt_path
+        # Resolve path relative to project root if necessary
+        if not os.path.isabs(prompt_path):
+            # Attempt to locate relative to current working dir
+            candidate = os.path.join(os.getcwd(), prompt_path)
+            prompt_path = candidate if os.path.exists(candidate) else prompt_path
+        with open(prompt_path, 'r', encoding='utf-8') as fh:  # noqa: PTH123
+            _sys_prompt = fh.read().strip()
+
+        lines: list[str] = []
+        for idx, (nid, quote, dist) in enumerate(retrieved_pairs, start=1):
+            dist_part = f" (dist={dist:.3f})" if isinstance(dist, (int, float)) else ""
+            lines.append(f"{idx}. note_id={nid}{dist_part} -> {quote}")
+        retrieval_context = (_sys_prompt + "\n\nRelevant notes:\n" + "\n".join(lines))
+
     if settings.modelhub_api_key and settings.modelhub_base_url:
         try:
             client = get_modelhub_client()
@@ -229,6 +253,9 @@ async def chat_send(
                     assembled.append({"role": "user", "content": pm.content})
                 if pm.response:
                     assembled.append({"role": "assistant", "content": pm.response})
+            # Inject retrieval context BEFORE current user question so model can ground answer.
+            if retrieval_context:
+                assembled.append({"role": "system", "content": retrieval_context})
             assembled.append({"role": "user", "content": payload.content})
             completion = client.chat.completions.create(
                 messages=assembled,

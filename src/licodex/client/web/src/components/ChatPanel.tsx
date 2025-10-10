@@ -108,7 +108,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                         <button
                           className='btn tiny outline ml-4'
                           style={{ marginLeft: 8 }}
-                          title='Show sources'
+                          title={openSourcesFor === m.id ? 'Hide sources' : 'Show sources'}
                           onClick={() => void toggleSources(m)}
                         >
                           <Icon name='expand' size={12} />
@@ -125,7 +125,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                           <div key={s.note_id} className='source-line'>
                             <span
                               className='source-note-id'
-                              title='Open note'
+                              title='Open note (click)'
                               onClick={() => onOpenNote?.(s.note_id)}
                             >
                               {s.note_id}

@@ -157,7 +157,7 @@ button { font-family: inherit; }
 
 /* Retrieval sources in chat */
 .source-line { padding:2px 0; display:flex; align-items:center; gap:6px; font-size:inherit; }
-.source-note-id { cursor:pointer; font-weight:600; }
+.source-note-id { cursor:pointer; font-weight:600; color:#ffcc00; }
 .source-note-id:hover { text-decoration: underline; }
 .distance-badge { background:#233028; border-color:#2d3a30; color:#7ee787; font-weight:500; }
 
