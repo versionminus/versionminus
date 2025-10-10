@@ -22,6 +22,9 @@ from licodex.api.routers.embeddings import search_embeddings as embeddings_searc
 from licodex.core.config import get_settings
 
 from licodex.core.modelhub import get_modelhub_client, resolve_chat_model
+from licodex.core.errors import ResponseTooLongError
+from sqlalchemy.exc import DBAPIError
+import re
 
 router = APIRouter(prefix="/chat", tags=["chat"])
 
@@ -239,12 +242,28 @@ async def chat_send(
         assistant_reply = f"Stub reply (model={resolved_model}) to: {last_user}".strip()
 
     # 5. Persist reply
-    msg.response = assistant_reply  # type: ignore[attr-defined]
+    try:
+        msg.response = assistant_reply  # type: ignore[attr-defined]
+    except Exception:  # assignment itself will not fail, DB flush might
+        pass
     # Persist sources rows for retrieval
     if retrieved_pairs:
         await create_sources_for_group(session, sources_id=retrieval_group_id, items=retrieved_pairs)
-    await session.flush()
-    await session.commit()
+    try:
+        await session.flush()
+        await session.commit()
+    except DBAPIError as db_err:  # pragma: no cover - depends on DB state
+        # Detect legacy varchar length failure (asyncpg StringDataRightTruncationError)
+        msg_txt = str(db_err.orig) if getattr(db_err, "orig", None) else str(db_err)
+        # attempt to extract limit (e.g., 'value too long for type character varying(255)')
+        m = re.search(r"character varying\((\d+)\)", msg_txt)
+        limit_int = int(m.group(1)) if m else None
+        if "value too long" in msg_txt.lower():
+            raise HTTPException(
+                status_code=422,
+                detail=str(ResponseTooLongError(length=len(assistant_reply or ''), limit=limit_int)),
+            ) from db_err
+        raise
 
     # 6. Return response (usage metrics are coarse placeholders)
     total_messages = len(prior_messages) + 1
