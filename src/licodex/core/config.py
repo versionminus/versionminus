@@ -120,6 +120,13 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("EMBEDDING_DEFAULT_DIM", "VECTOR_DIM", "EMBEDDINGS_DIM"),
         description="Default embedding vector dimension used when explicit collection config omits dim."
     )
+
+    # Path to retrieval augmentation system prompt (can be overridden via env)
+    retrieval_system_prompt_path: str = Field(
+        default="src/licodex/prompts/retrieval_system.txt",
+        validation_alias=AliasChoices("RETRIEVAL_SYSTEM_PROMPT_PATH"),
+        description="Filesystem path to system prompt injected before user message when retrieval context exists."
+    )
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # Derived / convenience

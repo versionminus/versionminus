@@ -20,6 +20,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const appendLocal = useCallback((line: ChatLine) => setLocalPending(h => [...h, line]), []);
   const [openSourcesFor, setOpenSourcesFor] = useState<string | null>(null);
+  const [dots, setDots] = useState('');
   const toggleSources = useCallback(async (m: Message) => {
     if (!m.source) return;
     if (openSourcesFor === m.id) { setOpenSourcesFor(null); return; }
@@ -36,10 +37,44 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
     appendLocal({ role: 'user', content: q, ts: Date.now() });
     setInput('');
     await licodex.sendChatMessage(selectedThreadId, q);
-    setTimeout(() => setLocalPending([]), 200);
   }, [appendLocal, input, licodex, selectedThreadId]);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); });
+
+  // Determine if there is a pending assistant response (latest message without response)
+  const pendingMessage = (() => {
+    const msgs = licodex.messages.data?.filter(m => m.thread_id === selectedThreadId) || [];
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      const m = msgs[i];
+      if (!m.response || m.response.trim() === '') return m;
+    }
+    return null;
+  })();
+
+  // Animate thinking dots while pending
+  useEffect(() => {
+    if (pendingMessage) {
+      const id = setInterval(() => setDots(d => (d.length >= 3 ? '' : d + '.')), 400);
+      return () => clearInterval(id);
+    } else {
+      setDots('');
+    }
+  }, [pendingMessage]);
+
+  // Clear local pending lines when their persisted counterpart (with response) arrives
+  useEffect(() => {
+    if (!localPending.length) return;
+    const msgs = licodex.messages.data?.filter(m => m.thread_id === selectedThreadId) || [];
+    // If every local user line has a persisted message (regardless of response), drop optimistic copies
+    const allMatched = localPending.every(lp => msgs.some(m => m.content === lp.content));
+    if (allMatched) {
+      // Keep them until at least one matched message has a response to maintain waiting state
+      const anyResponded = msgs.some(m => localPending.some(lp => lp.content === m.content) && m.response && m.response.trim() !== '');
+      if (anyResponded) setLocalPending([]);
+    }
+  }, [licodex.messages.data, localPending, selectedThreadId]);
+
+  const waiting = localPending.length > 0 || !!pendingMessage;
 
   const thread = licodex.threads.data?.find(t => t.id === selectedThreadId);
 
@@ -108,7 +143,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                         <button
                           className='btn tiny outline ml-4'
                           style={{ marginLeft: 8 }}
-                          title='Show sources'
+                          title={openSourcesFor === m.id ? 'Hide sources' : 'Show sources'}
                           onClick={() => void toggleSources(m)}
                         >
                           <Icon name='expand' size={12} />
@@ -125,7 +160,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                           <div key={s.note_id} className='source-line'>
                             <span
                               className='source-note-id'
-                              title='Open note'
+                              title='Open note (click)'
                               onClick={() => onOpenNote?.(s.note_id)}
                             >
                               {s.note_id}
@@ -150,17 +185,35 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
               </div>
             ))}
             {licodex.messages.loading && <div className="chat-line-bot fade-text">loading...</div>}
+            {/* Thinking animation for pending assistant response */}
+            {(waiting) && (
+              <div className='chat-line-bot thinking-line'>
+                licodex &gt; <span className='thinking-dots'>{dots}</span><span className='cursor-block' />
+              </div>
+            )}
+            {/* Inline prompt (terminal style) only when not waiting for assistant */}
+            {!waiting && (
+              <div className='chat-line-user prompt-line'>
+                <span>you &gt; </span>
+                <input
+                  className='prompt-input-inline'
+                  autoFocus
+                  value={input}
+                  placeholder=''
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
+                />
+                <button
+                  className='btn outline inline-send'
+                  title='Send'
+                  onClick={() => void send()}
+                  disabled={!input.trim() || !selectedThreadId}
+                >
+                  <Icon name='send' size={ICON_SIZE} />
+                </button>
+              </div>
+            )}
             <div ref={bottomRef} />
-          </div>
-          <div className="chat-prompt">
-            <input
-              className="input prompt-input"
-              placeholder='Ask a question...'
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && selectedThreadId) { e.preventDefault(); void send(); } }}
-            />
-            <button className="btn" title="Send" onClick={() => void send()} disabled={!input.trim() || !selectedThreadId}><Icon name="send" size={ICON_SIZE} /></button>
           </div>
         </>
       )}
