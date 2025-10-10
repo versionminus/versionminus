@@ -74,6 +74,17 @@ button { font-family: inherit; }
 .chat-line-bot { color: var(--text-primary); }
 .chat-prompt { border-top: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 8px; }
 .prompt-input { flex: 1; }
+/* Inline terminal style prompt */
+.prompt-line { display:flex; align-items:center; gap:6px; margin-top:6px; }
+.prompt-input-inline { flex:1; background:transparent; border:none; color:var(--accent); font-family:inherit; font-size:inherit; padding:0; outline:none; }
+.prompt-input-inline:focus { outline:none; }
+.inline-send { visibility:hidden; }
+.prompt-input-inline:focus + .inline-send, .prompt-input-inline:not(:placeholder-shown) + .inline-send { visibility:visible; }
+/* Thinking animation */
+.thinking-line { color: var(--text-primary); }
+.thinking-dots { display:inline-block; min-width:24px; }
+@keyframes blinkCursor { 0%, 49% { opacity:1; } 50%, 100% { opacity:0; } }
+.cursor-block { display:inline-block; width:8px; height:14px; background:var(--accent); margin-left:2px; animation: blinkCursor 1s steps(2, start) infinite; vertical-align:text-bottom; }
 
 .note-list { overflow-y: auto; max-height: calc(100% - 48px); padding:0; margin:0; }
 .note-item { border: 1px solid var(--border); background: var(--bg-tertiary); padding: 6px 8px; border-radius: 0; cursor: pointer; display: flex; flex-direction: row; align-items:center; gap: 8px; position:relative; }

@@ -27,9 +27,6 @@ This repository contains a live coding exercise for building a GenAI powered not
     - scale
     - ⚠️ host model
 - retrieval
-    - make it work:
-        - what are the embeddings endpoints?
-        - what are the chat endpoints?
     - Return richer metadata (distance scores, highlight spans) to the chat layer.
     - Switch to cosine similarity if you normalize vectors—currently hard-coded L2.
     - nprobe fixed at 10; might need tuning or exposure as a parameter.
@@ -42,3 +39,4 @@ This repository contains a live coding exercise for building a GenAI powered not
 - agentic behaviour
     - ⚠️ MCP
     - tool selection
+- rename react components
