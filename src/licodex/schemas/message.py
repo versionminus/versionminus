@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 from pydantic import BaseModel
 from .base import ORMBase
 
@@ -6,7 +7,6 @@ class MessageCreate(BaseModel):
     thread_id: uuid.UUID
     content: str = ""
     response: str = ""
-    source: uuid.UUID | None = None
     source: uuid.UUID | None = None
 
 
@@ -16,11 +16,10 @@ class MessageRead(ORMBase):
     content: str
     response: str
     source: uuid.UUID | None = None
-    source: uuid.UUID | None
+    created: datetime
 
 
 class MessageUpdate(BaseModel):
     content: str | None = None
     response: str | None = None
-    source: uuid.UUID | None = None
     source: uuid.UUID | None = None

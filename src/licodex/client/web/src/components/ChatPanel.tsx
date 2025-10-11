@@ -146,7 +146,7 @@ export function ChatPanel({ licodex, selectedNote, selectedThreadId, onThreadDel
                           title={openSourcesFor === m.id ? 'Hide sources' : 'Show sources'}
                           onClick={() => void toggleSources(m)}
                         >
-                          <Icon name='expand' size={12} />
+                          <Icon name='sources' size={12} />
                         </button>
                       )}
                     </div>

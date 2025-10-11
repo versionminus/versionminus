@@ -93,8 +93,6 @@ MESSAGES_PER_THREAD=${MESSAGES_PER_THREAD:-0}
 
 USERS=(
   "diogo@licodex.com"
-  "nuno@licodex.com"
-  "shan@licodex.com"
 )
 
 FORCED_USER_IDS="diogo@licodex.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4"

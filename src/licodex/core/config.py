@@ -5,7 +5,10 @@ from typing import Optional
 
 class Settings(BaseSettings):
     # API
-    app_name: str = Field(default="licodex-api", validation_alias=AliasChoices("APP_NAME", "LICODEX_APP_NAME"))
+    app_name: str = Field(
+        default="licodex",
+        validation_alias=AliasChoices("APP_NAME"),
+    )
     environment: str = Field(default="dev", validation_alias=AliasChoices("ENVIRONMENT", "ENV"))
     log_level: str = Field(default="INFO")
     api_prefix: str = "/api/v1"
@@ -127,6 +130,62 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("RETRIEVAL_SYSTEM_PROMPT_PATH"),
         description="Filesystem path to system prompt injected before user message when retrieval context exists."
     )
+
+    # ------------------------------------------------------------------
+    # Auth / OIDC (Auth0)
+    # ------------------------------------------------------------------
+    auth_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("AUTH_ENABLED"),
+        description="Enable OIDC bearer token verification (Auth0). When false, all routes are unauthenticated."
+    )
+    auth_testing_mode: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("AUTH_TESTING_MODE"),
+        description="If true, middleware will bypass token signature verification when missing and inject dummy claims for tests.")
+    auth0_domain: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("AUTH_DOMAIN"),
+        description="Auth0 issuer or domain (full https URL like 'https://tenant.eu.auth0.com/' or bare domain)."
+    )
+    auth0_api_audience: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("AUTH_API_AUDIENCE"),
+        description="Expected audience value for access tokens (API Identifier configured under Auth0 APIs)."
+    )
+    auth0_client_id: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("AUTH_APPLICATION_CLIENT_ID"),
+        description="Auth0 application client ID (for future client credentials or introspection)."
+    )
+    auth0_client_secret: Optional[SecretStr] = Field(
+        default=None,
+        validation_alias=AliasChoices("AUTH_APPLICATION_CLIENT_SECRET"),
+        description="Auth0 application client secret (keep confidential)."
+    )
+    auth_algorithms: list[str] = Field(
+        default=["RS256"],
+        validation_alias=AliasChoices("AUTH_ALGORITHMS"),
+        description="Allowed JWT signing algorithms."
+    )
+    auth_jwks_cache_ttl_seconds: int = Field(
+        default=600,
+        validation_alias=AliasChoices("AUTH_JWKS_CACHE_TTL", "AUTH_JWKS_CACHE_TTL_SECONDS"),
+        description="JWKS cache TTL in seconds before refreshing from the Auth0 domain."
+    )
+
+    @property
+    def auth0_issuer(self) -> Optional[str]:
+        """Normalized issuer URL with trailing '/' regardless of input format."""
+        if not self.auth0_domain:
+            return None
+        d = self.auth0_domain.strip()
+        if d.startswith("http://"):
+            d = d[len("http://"):]
+        elif d.startswith("https://"):
+            d = d[len("https://"):]
+        d = d.rstrip('/')
+        return f"https://{d}/"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # Derived / convenience
