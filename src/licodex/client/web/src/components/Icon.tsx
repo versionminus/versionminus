@@ -1,9 +1,9 @@
 import React from 'react';
 import {
-  VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscRocket
+  VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscArrowUp, VscListUnordered
 } from 'react-icons/vsc';
 
-export type IconName = 'plus' | 'x' | 'trash' | 'edit' | 'check' | 'refresh' | 'threads' | 'note' | 'send' | 'expand';
+export type IconName = 'plus' | 'x' | 'trash' | 'edit' | 'check' | 'refresh' | 'threads' | 'note' | 'send' | 'sources';
 
 // Single source of truth for sizing all icon-only buttons.
 export const ICON_SIZE = 14; // px
@@ -17,8 +17,8 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   refresh: VscRefresh,
   threads: VscCommentDiscussion,
   note: VscNotebook,
-  send: VscRocket,
-  expand: VscNotebook
+  send: VscArrowUp,
+  sources: VscListUnordered
 };
 
 interface Props { name: IconName; size?: number; }

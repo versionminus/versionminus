@@ -71,11 +71,12 @@ async def list_messages_per_thread(
 
     Returns a list of (Thread, [Message, ...]) tuples. Threads with no messages
     will have an empty list. If thread_id is provided, only that thread is returned.
+    Messages are ordered by created timestamp (oldest first).
     """
     stmt = (
         select(Thread, Message)
         .outerjoin(Message, Message.thread_id == Thread.id)
-        .order_by(Thread.id)
+        .order_by(Thread.id, Message.created.asc())
     )
     if thread_id:
         stmt = stmt.where(Thread.id == thread_id)

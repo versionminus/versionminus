@@ -1,6 +1,7 @@
 import uuid
+from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, ForeignKey, Text
+from sqlalchemy import String, ForeignKey, Text, DateTime
 from licodex.db.session import Base
 from typing import TYPE_CHECKING
 
@@ -15,3 +16,4 @@ class Message(Base):
     thread_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("thread.id"), nullable=False)
     # Group identifier referencing a set of Source rows (not a FK because Source.id is non-unique)
     source: Mapped[uuid.UUID | None] = mapped_column(nullable=True, index=True)
+    created: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

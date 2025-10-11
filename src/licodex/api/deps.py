@@ -12,5 +12,6 @@ Add new dependency callables here as the API grows.
 """
 
 from licodex.db.session import get_db
+from licodex.core.auth import get_current_user
 
-__all__ = ["get_db"]
+__all__ = ["get_db", "get_current_user"]

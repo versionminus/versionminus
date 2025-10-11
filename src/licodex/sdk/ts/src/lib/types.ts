@@ -83,6 +83,7 @@ export interface Message {
   content: string;
   response: string;
   source?: string | null; // retrieval group id
+  created: string; // ISO timestamp
 }
 
 export interface MessageInput {
