@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // Disable composite so we can turn off declarations for the CJS build only.
+    "composite": false,
+    "module": "CommonJS",
+    // Output CJS build into its own subdirectory to avoid overwriting ESM output.
+    "outDir": "dist/cjs",
+    // Don't emit type declarations a second time; the ESM build (tsconfig.build.json) handles that.
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false,
+    "sourceMap": true
+  },
+  "include": ["src"],
+  "exclude": ["dist", "node_modules"]
+}

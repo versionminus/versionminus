@@ -10,7 +10,7 @@
 **/coverage
 **/node_modules
 tests/test.db
-**/*.tsbuildinfo
+
 
 # DevContainer entries
 .cache/
@@ -30,6 +30,10 @@ tests/test.db
 !.vscode/*.json
 !package*.json
 !**/quotes.json
+!**/tsconfig.json
+!**/tsconfig.base.json
+!**/tsconfig.build.json
+!**/tsconfig.cjs.json
 !.env.example
 !.bashrc
 !.githooks
