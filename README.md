@@ -41,7 +41,9 @@ This repository contains a live coding exercise for building a GenAI powered not
     - tool selection
 - rename react components
 
-# Devcontainer
+# Contributing
+
+## Devcontainer
 
 ```sh
 docker network create licodex
@@ -50,8 +52,39 @@ docker network create licodex
 echo GITHUB_TOKEN | docker login ghcr.io -u $USER --password-stdin
 
 # Build devcontainer images
+docker network create licodex # such that the containers can communicate
 docker build -f .devcontainer/docker/Dockerfile.base -t ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0 . # first setup only
 docker build -f .devcontainer/docker/Dockerfile.tools -t ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0 . # first setup only
 USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 # attach to the devcontainer with vscode
+```
+
+## Local host
+
+```sh
+# system
+sudo apt update && xargs -a .devcontainer/sys-requirements.txt sudo apt install -y --no-install-recommends && sudo apt clean
+
+# solution dependencies
+pip install -r .devcontainer/python-requirements.txt
+cd src/licodex/sdk/ts && npm install && npm run build
+cd ../../client/web && npm install && npm run build
+
+# solution
+docker compose build db milvus milvus-etcd milvus-minio api
+docker compose up -d db milvus milvus-etcd milvus-minio
+make up-api MODELHUB_API_KEY=paste MODELHUB_BASE_URL=paste MODELHUB=openai
+cd src/licodex/client/web && npm run dev
+```
+
+### Debugging
+
+Useful commands for debugging
+
+```sh
+docker exec licodex-db psql -U licodex -d licodex -c "select * from message"
+docker exec licodex-db psql -U licodex -d licodex -c "select * from note"
+docker exec licodex-db psql -U licodex -d licodex -c "select * from user"
+docker exec licodex-db psql -U licodex -d licodex -c "select * from source"
+docker exec licodex-db psql -U licodex -d licodex -c "select * from thread"
 ```

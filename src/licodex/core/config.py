@@ -45,7 +45,7 @@ class Settings(BaseSettings):
     )
     # Default model names / identifiers
     chat_completion_model: str = Field(
-        default="openai_gpt4o_128k",
+        default="gpt-4o-mini",
         validation_alias=AliasChoices("CHAT_COMPLETION_MODEL"),
         description="Default model identifier used for chat completion endpoints when a model isn't explicitly supplied.",
     )
@@ -73,9 +73,8 @@ class Settings(BaseSettings):
         description="Seconds between retry attempts while establishing initial Milvus connection."
     )
 
-    # label: text-embedding-ada-002
     rag_embedding_model: Optional[str] = Field(
-        default="openai_text_embedding_ada",
+        default="text-embedding-3-small",
         validation_alias=AliasChoices("EMBEDDING_MODEL"),
         description="Embedding model name used for RAG / vector creation."
     )

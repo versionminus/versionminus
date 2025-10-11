@@ -43,3 +43,13 @@ __all__ = [
     "LicodexError",
     "ResponseTooLongError",
 ]
+
+
+class NoSuchModelError(LicodexError):
+    """Raised when a requested model identifier is unknown or unavailable.
+
+    Carries the attempted model name for propagation to SDK / UI logging.
+    """
+    def __init__(self, model: str | None):
+        self.model = model or "<unspecified>"
+        super().__init__(f"No such model: {self.model}")

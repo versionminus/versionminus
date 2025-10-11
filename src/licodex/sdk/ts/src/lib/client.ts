@@ -1,7 +1,7 @@
 import axios, { AxiosInstance, AxiosError } from 'axios';
 import { LicodexConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID, LicodexLogger, Source } from './types';
 
-export const DEFAULT_BASE_URL = 'http://licodex-api:8000';
+export const DEFAULT_BASE_URL = 'http://localhost:8000';
 export const VERSION="1.0.0";
 
 // Server FastAPI settings.api_prefix is "/api/v1". We expect callers to pass a baseUrl
@@ -54,8 +54,12 @@ export class LicodexClient {
             const cfg = (error.config || {}) as { baseURL?: string; url?: string; method?: string };
             const url = (cfg.baseURL || '') + (cfg.url || '');
             if (error.response) {
+              const data: any = error.response.data;
+              // Surface NoSuchModel with attempted model name in logs
+              const maybeModel = data?.error?.model || data?.detail?.error?.model;
               this.logger.error?.(`[Licodex SDK ${VERSION}] ✕`, error.response.status, cfg.method?.toUpperCase(), url, {
-                data: error.response.data,
+                data,
+                ...(maybeModel ? { model: maybeModel } : {}),
               });
             } else if (error.request) {
               this.logger.error?.(`[Licodex SDK ${VERSION}] ✕ NO_RESPONSE`, cfg.method?.toUpperCase(), url, {
@@ -172,7 +176,7 @@ export class LicodexClient {
   }
 
   // Embeddings -----------------------------------------------------------------
-  async embedNote(note: Note, model = 'openai_text_embedding_ada'): Promise<any> { // backend will validate / override model if needed
+  async embedNote(note: Note, model = 'text-embedding-3-small'): Promise<any> { // backend will validate / override model if needed
     // Provide parallel arrays with single element for note + user id
     const payload = {
       model,

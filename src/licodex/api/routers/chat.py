@@ -22,7 +22,7 @@ from licodex.api.routers.embeddings import search_embeddings as embeddings_searc
 from licodex.core.config import get_settings
 
 from licodex.core.modelhub import get_modelhub_client, resolve_chat_model
-from licodex.core.errors import ResponseTooLongError
+from licodex.core.errors import ResponseTooLongError, NoSuchModelError
 from sqlalchemy.exc import DBAPIError
 import re
 
@@ -61,7 +61,10 @@ async def chat_completions(req: ChatCompletionRequest):
             - Only one configured model is allowed right now.
             - No tool / function call roles yet (limited to user/system/assistant).
         """
-        resolved_model, reason = resolve_chat_model(req.model)
+        try:
+                resolved_model, reason = resolve_chat_model(req.model)
+        except NoSuchModelError as e:
+                raise HTTPException(status_code=404, detail={"error": {"code": "model_not_found", "message": str(e), "model": e.model}})
         user_parts = [m.content for m in req.messages if m.role == "user"]
         last_user = user_parts[-1] if user_parts else "(no user input)"
 
@@ -218,7 +221,10 @@ async def chat_send(
 
     last_user = payload.content or (history_user_texts[-1] if history_user_texts else "")
     settings = get_settings()
-    resolved_model, reason = resolve_chat_model(payload.model)
+    try:
+        resolved_model, reason = resolve_chat_model(payload.model)
+    except NoSuchModelError as e:
+        raise HTTPException(status_code=404, detail={"error": {"code": "model_not_found", "message": str(e), "model": e.model}})
     # Build retrieval context (RAG augmentation) injected as a system message.
     retrieval_context: str | None = None
     if retrieved_pairs:

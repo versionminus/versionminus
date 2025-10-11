@@ -17,7 +17,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from licodex.core.config import get_settings
 from licodex.core.milvus.milvus import get_milvus
-from licodex.core.modelhub import get_modelhub_client
+from licodex.core.modelhub import get_modelhub_client, resolve_embedding_model
+from licodex.core.errors import NoSuchModelError
 from licodex.schemas.embeddings import EmbeddingRequest, SearchRequest, HealthResponse
 from licodex.api import deps
 from licodex.models.note import Note, NoteStatus
@@ -102,7 +103,10 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
         req.note_ids = input_note_ids
 
     # Generate vectors using real embedding model
-    model_name = req.model or settings.rag_embedding_model
+    try:
+        model_name = resolve_embedding_model(req.model or settings.rag_embedding_model)
+    except NoSuchModelError as e:
+        raise HTTPException(status_code=404, detail={"error": {"code": "model_not_found", "message": str(e), "model": e.model}})
     vectors = _embed_texts(expanded_inputs, model_name, dim)
 
     if not req.upsert:

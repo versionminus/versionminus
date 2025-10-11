@@ -10,7 +10,7 @@ class Milvus:
     Parameters
     ----------
     host: str | None
-        Target Milvus host. If None, falls back to settings.milvus_host or 'licodex-milvus'.
+        Target Milvus host. If None, falls back to settings.milvus_host or 'localhost'.
     port: int | str | None
         Target Milvus port. If None, falls back to settings.milvus_http_port or 19530.
 
