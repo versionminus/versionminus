@@ -1,4 +1,4 @@
-FROM milvusdb/milvus:v2.3.9
+FROM milvusdb/milvus:v2.4.9
 
 # Build args (deployment metadata)
 ARG DEPLOYMENT_ENV=local
@@ -7,7 +7,12 @@ ENV DEPLOYMENT_ENV=$DEPLOYMENT_ENV
 RUN echo "[INFO] Building licodex Milvus image for '$DEPLOYMENT_ENV' environment"
 
 USER root
-RUN apt-get update && apt-get install -y python3 python3-pip && rm -rf /var/lib/apt/lists/*
+# Use Python 3.11 to support PEP 585 annotations like list[str]
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends python3.11 python3.11-venv python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 1 \
+    && python3 --version
 
 # Copy Milvus helper scripts and requirements
 COPY src/licodex/milvus/bin/init.py /init.py

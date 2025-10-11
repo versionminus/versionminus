@@ -16,6 +16,7 @@ except Exception:  # pragma: no cover - import failure path
     OpenAI = None  # type: ignore
 
 from .config import get_settings
+from .errors import NoSuchModelError
 
 
 class ModelHubUnavailable(RuntimeError):
@@ -72,5 +73,17 @@ def resolve_chat_model(requested: str | None) -> tuple[str, str]:
         return default_model, "default_used"
     if requested == default_model:
         return requested, "requested_allowed"
-    # Not allowed -> fall back to default (could alternatively raise 400)
-    return default_model, "not_allowed_defaulted"
+    # Mismatch: explicitly raise to let API map to 404 with model detail
+    raise NoSuchModelError(requested)
+
+def resolve_embedding_model(requested: str | None) -> str:
+    """Resolve embedding model; raise if not matching configured default.
+
+    Current policy mirrors chat models: only the configured default is allowed.
+    This ensures a clear error with the attempted model name for the SDK/React.
+    """
+    settings = get_settings()
+    default_model = settings.rag_embedding_model
+    if not requested or requested == default_model:
+        return default_model
+    raise NoSuchModelError(requested)
