@@ -25,27 +25,130 @@ from licodex.models.note import Note, NoteStatus
 from sqlalchemy import select
 from uuid import UUID
 
-MAX_CHUNK_TOKENS = 800  # simple heuristic for splitting very long notes
-CHUNK_OVERLAP = 50
+MAX_CHUNK_TOKENS = 800  # default token budget per chunk (approx if no tokenizer)
+CHUNK_OVERLAP = 50      # default overlap tokens/words between chunks
 MAX_VECTORS_PER_COLLECTION = 1000  # safety cap to avoid huge payloads
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
 
 
 def _split_text(text: str) -> List[str]:
-    # Extremely naive tokenizer by whitespace. Improve later with tiktoken.
-    words = text.split()
-    if len(words) <= MAX_CHUNK_TOKENS:
-        return [text]
-    chunks = []
-    start = 0
-    while start < len(words):
-        end = min(start + MAX_CHUNK_TOKENS, len(words))
-        chunk = " ".join(words[start:end])
-        chunks.append(chunk)
-        if end == len(words):
-            break
-        start = max(end - CHUNK_OVERLAP, end)  # avoid negative; minimal overlap currently
+    """Split text into semantically coherent, token-aware chunks with adaptive overlap.
+
+    Strategy (dependency-light with graceful fallbacks):
+      1) Prefer token-based chunking using tiktoken (if available) aligned to
+         the configured embedding model tokenization. Target size MAX_CHUNK_TOKENS.
+      2) Use semantic boundaries (paragraphs -> sentences) to build chunks until
+         surpassing target, then emit a chunk and continue. This preserves coherence.
+      3) Adaptive overlap: 5–15% of chunk size (bounded by CHUNK_OVERLAP) to
+         reduce boundary loss; fallback to word-based 50 if tokenizer absent.
+
+    Returns list of chunk strings.
+    """
+    import re
+    from licodex.core.config import get_settings as _gs
+
+    if not text or not text.strip():
+        return []
+
+    settings = _gs()
+
+    # Try tiktoken for model-aligned tokenization
+    enc = None
+    try:  # pragma: no cover - optional dependency
+        import tiktoken  # type: ignore
+        model_name = settings.rag_embedding_model
+        enc = tiktoken.encoding_for_model(model_name)
+    except Exception:  # pragma: no cover
+        enc = None
+
+    # Split into paragraphs then sentences for semantic boundaries
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
+    if not paragraphs:
+        paragraphs = [text.strip()]
+
+    sentence_splitter = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\(\[\"'])")
+
+    def count_tokens(s: str) -> int:
+        if enc is None:
+            # Rough fallback: whitespace tokens ~ words
+            return len(s.split())
+        try:
+            return len(enc.encode(s))
+        except Exception:
+            return len(s.split())
+
+    target = MAX_CHUNK_TOKENS
+    chunks: list[str] = []
+    buffer: list[str] = []
+    buffer_tokens = 0
+
+    def flush_buffer():
+        nonlocal buffer, buffer_tokens
+        if buffer:
+            chunks.append(" ".join(buffer).strip())
+            buffer = []
+            buffer_tokens = 0
+
+    for para in paragraphs:
+        sentences = sentence_splitter.split(para) if len(para) < 20000 else [para]
+        for sent in sentences:
+            stoks = count_tokens(sent)
+            if stoks >= target * 1.2 and len(sent.split()) > 50:
+                # Very long sentence: fall back to mid-sentence splitting by words
+                words = sent.split()
+                w_start = 0
+                while w_start < len(words):
+                    w_end = min(w_start + target, len(words))
+                    piece = " ".join(words[w_start:w_end])
+                    ptoks = count_tokens(piece)
+                    if buffer_tokens + ptoks > target and buffer:
+                        flush_buffer()
+                    buffer.append(piece)
+                    buffer_tokens += ptoks
+                    if buffer_tokens >= target:
+                        flush_buffer()
+                    # adaptive overlap for words fallback
+                    overlap_words = min(CHUNK_OVERLAP, max(1, int((w_end - w_start) * 0.1)))
+                    if w_end >= len(words):
+                        break
+                    w_start = max(0, w_end - overlap_words)
+            else:
+                if buffer_tokens + stoks > target and buffer:
+                    flush_buffer()
+                buffer.append(sent)
+                buffer_tokens += stoks
+                if buffer_tokens >= target:
+                    flush_buffer()
+
+    flush_buffer()
+
+    # Ensure overlap across chunk boundaries adaptively
+    if chunks:
+        overlapped: list[str] = []
+        prev = None
+        for i, ch in enumerate(chunks):
+            if prev is None:
+                overlapped.append(ch)
+            else:
+                # compute overlap tail from prev
+                if enc is not None:
+                    prev_tokens = enc.encode(prev)
+                    overlap_len = min(max(int(len(prev_tokens) * 0.1), 20), CHUNK_OVERLAP)
+                    tail_tokens = prev_tokens[-overlap_len:] if overlap_len > 0 else []
+                    try:
+                        tail_text = enc.decode(tail_tokens)
+                    except Exception:
+                        tail_text = " ".join(prev.split()[-overlap_len:])
+                else:
+                    words = prev.split()
+                    overlap_len = min(max(int(len(words) * 0.1), 20), CHUNK_OVERLAP)
+                    tail_text = " ".join(words[-overlap_len:]) if overlap_len > 0 else ""
+                combined = (tail_text + " " + ch).strip() if tail_text else ch
+                overlapped.append(combined)
+            prev = ch
+        chunks = overlapped
+
     return chunks
 
 
@@ -141,16 +244,36 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
     _validate_parallel("statuses", req.statuses)
     _validate_parallel("metadatas", req.metadatas)
 
-    # Build enriched metadata baseline if needed
+    # Build enriched metadata baseline if needed, including chunk ordering
     enriched_metadatas: List[str] | None = None
     if req.metadatas is None:
         enriched_metadatas = []
-        for text in expanded_inputs:
+        # We reconstruct chunk indices by re-splitting each original input
+        # and assigning (chunk_index, total_chunks). This avoids plumbing
+        # indices through earlier expansion logic for minimal diff.
+        original_inputs = [req.input] if isinstance(req.input, str) else list(req.input)
+        all_chunks_per_input: list[list[str]] = [
+            _split_text(t) for t in original_inputs
+        ]
+        # Flatten to match expanded_inputs order
+        flat_with_index: list[tuple[int, int]] = []
+        for chunks_list in all_chunks_per_input:
+            total = len(chunks_list) or 1
+            for idx in range(len(chunks_list)):
+                flat_with_index.append((idx, total))
+        # If a mismatch occurs due to any future logic, fall back safely
+        pad = len(expanded_inputs) - len(flat_with_index)
+        if pad > 0:
+            flat_with_index.extend([(0, 1)] * pad)
+        for i, text in enumerate(expanded_inputs):
             first_line = text.strip().splitlines()[0][:120] if text.strip() else ""
+            idx, total = flat_with_index[i] if i < len(flat_with_index) else (0, 1)
             meta_obj = {
                 "pseudo_title": first_line,
                 "content_length": len(text),
                 "created_at": datetime.utcnow().isoformat(),
+                "chunk_index": idx,
+                "chunk_total": total,
             }
             enriched_metadatas.append(json.dumps(meta_obj))
     for fname in remaining_fields:
