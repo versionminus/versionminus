@@ -8,7 +8,7 @@ search returns candidates ->
 get original note content from pg
 """
 from fastapi import APIRouter, HTTPException, Depends, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import hashlib
 from datetime import datetime
 import json
@@ -19,137 +19,17 @@ from licodex.core.config import get_settings
 from licodex.core.milvus.milvus import get_milvus
 from licodex.core.modelhub import get_modelhub_client, resolve_embedding_model
 from licodex.core.errors import NoSuchModelError
+from licodex.core.chunking import chunk_text, Chunk
+from licodex.services.chunk_policy import detect_chunk_policy
 from licodex.schemas.embeddings import EmbeddingRequest, SearchRequest, HealthResponse
 from licodex.api import deps
 from licodex.models.note import Note, NoteStatus
 from sqlalchemy import select
 from uuid import UUID
 
-MAX_CHUNK_TOKENS = 800  # default token budget per chunk (approx if no tokenizer)
-CHUNK_OVERLAP = 50      # default overlap tokens/words between chunks
 MAX_VECTORS_PER_COLLECTION = 1000  # safety cap to avoid huge payloads
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
-
-
-def _split_text(text: str) -> List[str]:
-    """Split text into semantically coherent, token-aware chunks with adaptive overlap.
-
-    Strategy (dependency-light with graceful fallbacks):
-      1) Prefer token-based chunking using tiktoken (if available) aligned to
-         the configured embedding model tokenization. Target size MAX_CHUNK_TOKENS.
-      2) Use semantic boundaries (paragraphs -> sentences) to build chunks until
-         surpassing target, then emit a chunk and continue. This preserves coherence.
-      3) Adaptive overlap: 5–15% of chunk size (bounded by CHUNK_OVERLAP) to
-         reduce boundary loss; fallback to word-based 50 if tokenizer absent.
-
-    Returns list of chunk strings.
-    """
-    import re
-    from licodex.core.config import get_settings as _gs
-
-    if not text or not text.strip():
-        return []
-
-    settings = _gs()
-
-    # Try tiktoken for model-aligned tokenization
-    enc = None
-    try:  # pragma: no cover - optional dependency
-        import tiktoken  # type: ignore
-        model_name = settings.rag_embedding_model
-        enc = tiktoken.encoding_for_model(model_name)
-    except Exception:  # pragma: no cover
-        enc = None
-
-    # Split into paragraphs then sentences for semantic boundaries
-    paragraphs = [p.strip() for p in re.split(r"\n\s*\n+", text) if p.strip()]
-    if not paragraphs:
-        paragraphs = [text.strip()]
-
-    sentence_splitter = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\(\[\"'])")
-
-    def count_tokens(s: str) -> int:
-        if enc is None:
-            # Rough fallback: whitespace tokens ~ words
-            return len(s.split())
-        try:
-            return len(enc.encode(s))
-        except Exception:
-            return len(s.split())
-
-    target = MAX_CHUNK_TOKENS
-    chunks: list[str] = []
-    buffer: list[str] = []
-    buffer_tokens = 0
-
-    def flush_buffer():
-        nonlocal buffer, buffer_tokens
-        if buffer:
-            chunks.append(" ".join(buffer).strip())
-            buffer = []
-            buffer_tokens = 0
-
-    for para in paragraphs:
-        sentences = sentence_splitter.split(para) if len(para) < 20000 else [para]
-        for sent in sentences:
-            stoks = count_tokens(sent)
-            if stoks >= target * 1.2 and len(sent.split()) > 50:
-                # Very long sentence: fall back to mid-sentence splitting by words
-                words = sent.split()
-                w_start = 0
-                while w_start < len(words):
-                    w_end = min(w_start + target, len(words))
-                    piece = " ".join(words[w_start:w_end])
-                    ptoks = count_tokens(piece)
-                    if buffer_tokens + ptoks > target and buffer:
-                        flush_buffer()
-                    buffer.append(piece)
-                    buffer_tokens += ptoks
-                    if buffer_tokens >= target:
-                        flush_buffer()
-                    # adaptive overlap for words fallback
-                    overlap_words = min(CHUNK_OVERLAP, max(1, int((w_end - w_start) * 0.1)))
-                    if w_end >= len(words):
-                        break
-                    w_start = max(0, w_end - overlap_words)
-            else:
-                if buffer_tokens + stoks > target and buffer:
-                    flush_buffer()
-                buffer.append(sent)
-                buffer_tokens += stoks
-                if buffer_tokens >= target:
-                    flush_buffer()
-
-    flush_buffer()
-
-    # Ensure overlap across chunk boundaries adaptively
-    if chunks:
-        overlapped: list[str] = []
-        prev = None
-        for i, ch in enumerate(chunks):
-            if prev is None:
-                overlapped.append(ch)
-            else:
-                # compute overlap tail from prev
-                if enc is not None:
-                    prev_tokens = enc.encode(prev)
-                    overlap_len = min(max(int(len(prev_tokens) * 0.1), 20), CHUNK_OVERLAP)
-                    tail_tokens = prev_tokens[-overlap_len:] if overlap_len > 0 else []
-                    try:
-                        tail_text = enc.decode(tail_tokens)
-                    except Exception:
-                        tail_text = " ".join(prev.split()[-overlap_len:])
-                else:
-                    words = prev.split()
-                    overlap_len = min(max(int(len(words) * 0.1), 20), CHUNK_OVERLAP)
-                    tail_text = " ".join(words[-overlap_len:]) if overlap_len > 0 else ""
-                combined = (tail_text + " " + ch).strip() if tail_text else ch
-                overlapped.append(combined)
-            prev = ch
-        chunks = overlapped
-
-    return chunks
 
 
 def _embed_texts(texts: List[str], model: str, dim: int) -> List[List[float]]:
@@ -189,21 +69,85 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
     settings = get_settings()
     dim = settings.rag_embedding_model_output or settings.embedding_default_dim or 1536
 
-    # Expand and chunk any long inputs
+    # Expand inputs according to detected chunk boundary policies
     expanded_inputs: List[str] = []
-    input_note_ids: List[str] | None = None
-    if isinstance(req.note_ids, list):
-        input_note_ids = []
-    for idx, text in enumerate(inputs):
-        pieces = _split_text(text)
-        if input_note_ids is not None:
-            # replicate note id per chunk
-            nid = req.note_ids[idx] if req.note_ids and idx < len(req.note_ids) else ""
-            input_note_ids.extend([nid] * len(pieces))
-        expanded_inputs.extend(pieces)
+    chunk_rows: List[Dict[str, Any]] = []
+    policy_summaries: List[Dict[str, Any]] = []
 
-    if input_note_ids is not None:
-        req.note_ids = input_note_ids
+    expanded_note_ids: List[str] | None = [] if isinstance(req.note_ids, list) else None
+    expanded_user_ids: List[str] | None = [] if isinstance(req.user_ids, list) else None
+    expanded_statuses: List[str] | None = [] if isinstance(req.statuses, list) else None
+    expanded_metadatas_input: List[str] | None = [] if isinstance(req.metadatas, list) else None
+
+    def _value_from_list(values: Optional[List[str]], index: int) -> str:
+        if isinstance(values, list) and index < len(values):
+            return values[index]
+        return ""
+
+    for idx, text in enumerate(inputs):
+        note_id_value = _value_from_list(req.note_ids, idx)
+        metadata_context = {"input_index": idx, "note_id": note_id_value}
+        decision = await detect_chunk_policy(text, override=req.chunk_policy, metadata=metadata_context)
+        policy_summaries.append(
+            {
+                "input_index": idx,
+                "policy": decision.policy.value,
+                "source": decision.source,
+                "reason": decision.reason,
+                "tool_used": decision.tool_used,
+            }
+        )
+
+        chunk_list = chunk_text(
+            text,
+            policy=decision.policy,
+            settings=settings,
+            max_tokens=settings.chunk_target_tokens,
+            overlap_tokens=settings.chunk_overlap_tokens,
+        )
+        if not chunk_list:
+            chunk_list = [Chunk(text=text or "", index=0, total=1, policy=decision.policy)]
+
+        chunk_count = len(chunk_list)
+        for chunk in chunk_list:
+            expanded_inputs.append(chunk.text)
+            chunk_rows.append(
+                {
+                    "text": chunk.text,
+                    "note_id": note_id_value,
+                    "input_index": idx,
+                    "chunk_index": chunk.index,
+                    "chunk_total": chunk.total,
+                    "policy": decision.policy.value,
+                    "policy_source": decision.source,
+                    "policy_reason": decision.reason,
+                    "policy_tool": decision.tool_used,
+                }
+            )
+
+        if expanded_note_ids is not None:
+            expanded_note_ids.extend([note_id_value] * chunk_count)
+        if expanded_user_ids is not None:
+            user_val = _value_from_list(req.user_ids, idx)
+            expanded_user_ids.extend([user_val] * chunk_count)
+        if expanded_statuses is not None:
+            status_val = _value_from_list(req.statuses, idx)
+            expanded_statuses.extend([status_val] * chunk_count)
+        if expanded_metadatas_input is not None:
+            meta_val = _value_from_list(req.metadatas, idx)
+            expanded_metadatas_input.extend([meta_val] * chunk_count)
+
+    if expanded_note_ids is not None:
+        req.note_ids = expanded_note_ids
+    if expanded_user_ids is not None:
+        req.user_ids = expanded_user_ids
+    if expanded_statuses is not None:
+        req.statuses = expanded_statuses
+    if expanded_metadatas_input is not None:
+        req.metadatas = expanded_metadatas_input
+
+    if not expanded_inputs:
+        raise HTTPException(status_code=400, detail="Chunking produced no content to embed")
 
     # Generate vectors using real embedding model
     try:
@@ -213,7 +157,7 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
     vectors = _embed_texts(expanded_inputs, model_name, dim)
 
     if not req.upsert:
-        return {"model": req.model, "data": vectors, "dimensions": dim}
+        return {"model": req.model, "data": vectors, "dimensions": dim, "policies": policy_summaries}
 
     collection_name = req.collection or "notes"
     try:
@@ -236,44 +180,33 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
 
     # Validate optional metadata lengths if provided
     def _validate_parallel(name: str, data: Optional[List[str]]):
-        if data is not None and len(data) != len(inputs):
-            raise HTTPException(status_code=400, detail=f"Field '{name}' length {len(data)} != inputs length {len(inputs)}")
+        if data is not None and len(data) != len(expanded_inputs):
+            raise HTTPException(status_code=400, detail=f"Field '{name}' length {len(data)} != chunked inputs length {len(expanded_inputs)}")
 
     _validate_parallel("note_ids", req.note_ids)
     _validate_parallel("user_ids", req.user_ids)
     _validate_parallel("statuses", req.statuses)
     _validate_parallel("metadatas", req.metadatas)
 
-    # Build enriched metadata baseline if needed, including chunk ordering
+    # Build enriched metadata baseline if needed, including chunk ordering and policy data
     enriched_metadatas: List[str] | None = None
     if req.metadatas is None:
         enriched_metadatas = []
-        # We reconstruct chunk indices by re-splitting each original input
-        # and assigning (chunk_index, total_chunks). This avoids plumbing
-        # indices through earlier expansion logic for minimal diff.
-        original_inputs = [req.input] if isinstance(req.input, str) else list(req.input)
-        all_chunks_per_input: list[list[str]] = [
-            _split_text(t) for t in original_inputs
-        ]
-        # Flatten to match expanded_inputs order
-        flat_with_index: list[tuple[int, int]] = []
-        for chunks_list in all_chunks_per_input:
-            total = len(chunks_list) or 1
-            for idx in range(len(chunks_list)):
-                flat_with_index.append((idx, total))
-        # If a mismatch occurs due to any future logic, fall back safely
-        pad = len(expanded_inputs) - len(flat_with_index)
-        if pad > 0:
-            flat_with_index.extend([(0, 1)] * pad)
-        for i, text in enumerate(expanded_inputs):
+        for idx, row in enumerate(chunk_rows):
+            text = row.get("text", "")
             first_line = text.strip().splitlines()[0][:120] if text.strip() else ""
-            idx, total = flat_with_index[i] if i < len(flat_with_index) else (0, 1)
             meta_obj = {
                 "pseudo_title": first_line,
                 "content_length": len(text),
                 "created_at": datetime.utcnow().isoformat(),
-                "chunk_index": idx,
-                "chunk_total": total,
+                "chunk_index": row.get("chunk_index", 0),
+                "chunk_total": row.get("chunk_total", 1),
+                "chunk_policy": row.get("policy"),
+                "chunk_policy_source": row.get("policy_source"),
+                "chunk_policy_reason": row.get("policy_reason"),
+                "chunk_policy_tool": row.get("policy_tool"),
+                "input_index": row.get("input_index"),
+                "note_id": row.get("note_id"),
             }
             enriched_metadatas.append(json.dumps(meta_obj))
     for fname in remaining_fields:
@@ -318,7 +251,14 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
         except Exception:  # pragma: no cover - don't fail main response
             pass
 
-    return {"model": model_name, "data": vectors, "dimensions": dim, "collection": collection_name, "count": len(vectors)}
+    return {
+        "model": model_name,
+        "data": vectors,
+        "dimensions": dim,
+        "collection": collection_name,
+        "count": len(vectors),
+        "policies": policy_summaries,
+    }
 
 
 @router.delete("/{note_id}", summary="Delete embeddings for a note (and reset status)", status_code=204)

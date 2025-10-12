@@ -108,6 +108,19 @@ services:
       - MODELHUB
     networks:
       - licodex
+
+  chunk-policy-mcp:
+    build:
+      context: .
+      dockerfile: src/licodex/mcp/Dockerfile
+    image: licodex-chunk-policy-mcp:1.0.0
+    container_name: licodex-chunk-policy-mcp
+    restart: unless-stopped
+    environment:
+      - CHUNK_POLICY_MODEL_PATH
+    networks:
+      - licodex
+
   web:
     build:
       context: .

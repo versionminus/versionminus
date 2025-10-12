@@ -84,6 +84,62 @@ class Settings(BaseSettings):
         description="Expected embedding vector dimension for validation."
     )
 
+    # Chunking / boundary detection configuration
+    chunk_boundary_policy_default: str = Field(
+        default="paragraph_sentence",
+        validation_alias=AliasChoices("CHUNK_BOUNDARY_POLICY_DEFAULT"),
+        description="Default chunk boundary policy when none is provided or detected."
+    )
+    chunk_overlap_tokens: int = Field(
+        default=50,
+        validation_alias=AliasChoices("CHUNK_OVERLAP_TOKENS"),
+        description="Maximum overlap tokens injected between adjacent chunks."
+    )
+    chunk_target_tokens: int = Field(
+        default=800,
+        validation_alias=AliasChoices("CHUNK_TARGET_TOKENS"),
+        description="Target token budget per chunk before overlap.")
+    chunk_policy_detection_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CHUNK_POLICY_DETECTION_ENABLED"),
+        description="Enable LangChain/LangGraph powered chunk policy detection before embedding."
+    )
+    chunk_policy_model_path: Optional[str] = Field(
+        default=None,
+        validation_alias=AliasChoices("CHUNK_POLICY_MODEL_PATH"),
+        description="Filesystem path to the GGUF model used for chunk policy detection (llama.cpp compatible)."
+    )
+    chunk_policy_model_ctx: int = Field(
+        default=2048,
+        validation_alias=AliasChoices("CHUNK_POLICY_MODEL_CTX"),
+        description="Context window (tokens) for the local chunk policy model."
+    )
+    chunk_policy_model_threads: int = Field(
+        default=8,
+        validation_alias=AliasChoices("CHUNK_POLICY_MODEL_THREADS"),
+        description="Number of CPU threads to allocate when running the chunk policy model."
+    )
+    chunk_policy_mcp_enabled: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CHUNK_POLICY_MCP_ENABLED"),
+        description="If true, the chunk policy detector will call an MCP server for tool execution."
+    )
+    chunk_policy_mcp_host: str = Field(
+        default="licodex-chunk-policy-mcp",
+        validation_alias=AliasChoices("CHUNK_POLICY_MCP_HOST"),
+        description="Hostname of the MCP server exposing chunk policy tools."
+    )
+    chunk_policy_mcp_port: int = Field(
+        default=8080,
+        validation_alias=AliasChoices("CHUNK_POLICY_MCP_PORT"),
+        description="Port of the MCP server exposing chunk policy tools."
+    )
+    chunk_policy_mcp_use_tls: bool = Field(
+        default=False,
+        validation_alias=AliasChoices("CHUNK_POLICY_MCP_USE_TLS"),
+        description="Whether the MCP server connection requires TLS."
+    )
+
     # Object storage / S3 for embeddings artifact persistence (optional)
     s3_embeddings_endpoint: Optional[str] = Field(
         default=None,

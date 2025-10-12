@@ -34,8 +34,10 @@ This repository contains a live coding exercise for building a GenAI powered not
     - search endpoint:
         - Deduplicate by logical note_id if chunks exist, returning best match plus snippet (can this replace my quotes?)
         - Support hybrid search (metadata + vector) in future.
-        - Include timing metrics (embedding latency, search latency) for observability.
-    - langchain/langgraph
+    - Include timing metrics (embedding latency, search latency) for observability.
+- chunk policy roadmap
+    - add regression tests for each policy splitter variant
+    - extend policy detector prompt with project-specific heuristics
 - agentic behaviour
     - ⚠️ MCP
     - tool selection
@@ -71,8 +73,8 @@ cd src/licodex/sdk/ts && npm install && npm run build
 cd ../../client/web && npm install && npm run build
 
 # solution
-docker compose build db milvus milvus-etcd milvus-minio api
-docker compose up -d db milvus milvus-etcd milvus-minio
+docker compose build db milvus milvus-etcd milvus-minio api chunk-policy-mcp
+docker compose up -d db milvus milvus-etcd milvus-minio chunk-policy-mcp
 make up-api MODELHUB_API_KEY=paste MODELHUB_BASE_URL=paste MODELHUB=openai
 cd src/licodex/client/web && npm run dev
 ```
@@ -88,3 +90,46 @@ docker exec licodex-db psql -U licodex -d licodex -c "select * from user"
 docker exec licodex-db psql -U licodex -d licodex -c "select * from source"
 docker exec licodex-db psql -U licodex -d licodex -c "select * from thread"
 ```
+
+## Chunk policy detection & MCP integration
+
+The embeddings pipeline can now decide chunk boundary strategies dynamically using a LangChain + LangGraph agent, a local CPU-friendly Hugging Face model, and an optional MCP tool server.
+
+### Flow overview
+
+1. Clients call `POST /api/v1/embeddings/` without `chunk_policy`.
+2. The API runs `detect_chunk_policy`:
+   - A LangGraph state machine prompts a local `llama-cpp` model (via LangChain) for a policy decision.
+   - When the model signals `use_tool=true`, the agent invokes the MCP tool `detect_chunk_boundary_policy`.
+3. The resolved policy feeds `chunk_text`, producing token-aware chunks (paragraph/sentence, code-preserving, headings, etc.).
+4. Each vector carries metadata (`chunk_index`, `chunk_total`, `chunk_policy*`) so retrieval and chat responses can reason about source ordering.
+5. API responses include `policies` summarising the decision source, reason, and (if applicable) MCP tool usage.
+
+### Suggested local model (CPU only)
+
+- Hugging Face: [`TheBloke/Mistral-7B-Instruct-v0.2-GGUF`](https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF)
+- Recommended quantization: `mistral-7b-instruct-v0.2.Q4_K_M.gguf` (~4 GB RAM)
+- Download manually and mount into the API/MCP containers, e.g. `./models/mistral-7b-instruct-q4_k_m.gguf`.
+- Configure environment:
+
+```sh
+CHUNK_POLICY_DETECTION_ENABLED=true
+CHUNK_POLICY_MODEL_PATH=/models/mistral-7b-instruct-q4_k_m.gguf
+CHUNK_POLICY_MODEL_THREADS=8   # adjust to available cores
+```
+
+### MCP sidecar
+
+The MCP server runs independently to keep the agent tool surface modular.
+
+```sh
+docker compose build chunk-policy-mcp
+docker compose up -d chunk-policy-mcp
+
+# point the API to the MCP endpoint
+CHUNK_POLICY_MCP_ENABLED=true
+CHUNK_POLICY_MCP_HOST=chunk-policy-mcp
+CHUNK_POLICY_MCP_PORT=8080
+```
+
+When MCP is disabled, heuristics still provide reasonable defaults (code blocks → `code_blocks`, short notes → `minimal_words`, etc.). Extend `src/licodex/mcp/chunk_policy_server.py` to experiment with richer detectors or additional tools.

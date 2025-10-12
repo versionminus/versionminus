@@ -3,6 +3,8 @@ from __future__ import annotations
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
+from licodex.core.chunking import ChunkBoundaryPolicy
+
 
 class EmbeddingRequest(BaseModel):
     model: str
@@ -14,6 +16,10 @@ class EmbeddingRequest(BaseModel):
     user_ids: Optional[List[str]] = Field(default=None, description="Parallel list of user ids (len must match inputs if provided)")
     statuses: Optional[List[str]] = Field(default=None, description="Parallel list of statuses (len must match inputs if provided)")
     metadatas: Optional[List[str]] = Field(default=None, description="Parallel list of JSON metadata strings (len must match inputs if provided)")
+    chunk_policy: Optional[ChunkBoundaryPolicy] = Field(
+        default=None,
+        description="Optional chunk boundary policy identifier overriding automatic detection.",
+    )
 
 
 class SearchRequest(BaseModel):

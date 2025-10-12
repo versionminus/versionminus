@@ -1,0 +1,2 @@
+# Requirements for the chunk policy MCP service
+-r ../api/python-requirements.txt
