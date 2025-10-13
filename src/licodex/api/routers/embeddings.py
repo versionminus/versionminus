@@ -8,10 +8,12 @@ search returns candidates ->
 get original note content from pg
 """
 from fastapi import APIRouter, HTTPException, Depends, status
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 import hashlib
 from datetime import datetime
 import json
+import logging
+import time
 from pymilvus import Collection, utility
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,50 +21,91 @@ from licodex.core.config import get_settings
 from licodex.core.milvus.milvus import get_milvus
 from licodex.core.modelhub import get_modelhub_client, resolve_embedding_model
 from licodex.core.errors import NoSuchModelError
+from licodex.core.chunking import chunk_text, Chunk
+from licodex.services.chunk_policy import detect_chunk_policy
 from licodex.schemas.embeddings import EmbeddingRequest, SearchRequest, HealthResponse
 from licodex.api import deps
 from licodex.models.note import Note, NoteStatus
 from sqlalchemy import select
-from uuid import UUID
+from uuid import UUID, uuid4
 
-MAX_CHUNK_TOKENS = 800  # simple heuristic for splitting very long notes
-CHUNK_OVERLAP = 50
 MAX_VECTORS_PER_COLLECTION = 1000  # safety cap to avoid huge payloads
 
 router = APIRouter(prefix="/embeddings", tags=["embeddings"])
+logger = logging.getLogger("licodex.api.embeddings")
 
 
-def _split_text(text: str) -> List[str]:
-    # Extremely naive tokenizer by whitespace. Improve later with tiktoken.
-    words = text.split()
-    if len(words) <= MAX_CHUNK_TOKENS:
-        return [text]
-    chunks = []
-    start = 0
-    while start < len(words):
-        end = min(start + MAX_CHUNK_TOKENS, len(words))
-        chunk = " ".join(words[start:end])
-        chunks.append(chunk)
-        if end == len(words):
-            break
-        start = max(end - CHUNK_OVERLAP, end)  # avoid negative; minimal overlap currently
-    return chunks
-
-
-def _embed_texts(texts: List[str], model: str, dim: int) -> List[List[float]]:
+def _embed_texts(texts: List[str], model: str, dim: int, telemetry: Optional[Dict[str, Any]] = None) -> List[List[float]]:
+    telemetry = telemetry or {}
+    trace_id = telemetry.get("trace_id")
+    call_id = uuid4().hex[:12]
+    input_descriptors = [
+        {
+            "index": idx,
+            "hash": hashlib.sha256(text.encode("utf-8")).hexdigest()[:12] if text else None,
+            "chars": len(text),
+        }
+        for idx, text in enumerate(texts[:10])
+    ]
+    logger.info(
+        "embeddings.model.request",
+        extra={
+            "trace_id": trace_id,
+            "call_id": call_id,
+            "model": model,
+            "expected_dim": dim,
+            "payload_count": len(texts),
+            "sample_payloads": input_descriptors,
+        },
+    )
+    start_time = time.perf_counter()
     client = get_modelhub_client()
     if client is None:
+        logger.error(
+            "embeddings.model.unavailable",
+            extra={"trace_id": trace_id, "call_id": call_id, "model": model},
+        )
         raise HTTPException(status_code=503, detail="Embedding model client not configured")
     # OpenAI compatible embeddings API
     try:
         resp = client.embeddings.create(model=model, input=texts)  # type: ignore[attr-defined]
         vectors = [item.embedding for item in resp.data]
     except Exception as e:  # pragma: no cover
+        logger.exception(
+            "embeddings.model.failure",
+            extra={
+                "trace_id": trace_id,
+                "call_id": call_id,
+                "model": model,
+                "error": repr(e),
+            },
+        )
         raise HTTPException(status_code=500, detail=f"Embedding generation failed: {e}")
     # Optional dim validation
     for v in vectors:
         if len(v) != dim:
+            logger.error(
+                "embeddings.model.dimension_mismatch",
+                extra={
+                    "trace_id": trace_id,
+                    "call_id": call_id,
+                    "model": model,
+                    "observed_dim": len(v),
+                    "expected_dim": dim,
+                },
+            )
             raise HTTPException(status_code=500, detail=f"Embedding dimension mismatch {len(v)} != expected {dim}")
+    duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
+    logger.info(
+        "embeddings.model.response",
+        extra={
+            "trace_id": trace_id,
+            "call_id": call_id,
+            "model": model,
+            "duration_ms": duration_ms,
+            "vector_count": len(vectors),
+        },
+    )
     return vectors
 
 
@@ -78,53 +121,224 @@ async def embeddings_health():
 
 @router.post("/", summary="Create (and optionally store) embeddings")
 async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depends(deps.get_db)):
+    trace_id = uuid4().hex[:12]
+    operation_start = time.perf_counter()
     # Normalize input to list
     inputs = [req.input] if isinstance(req.input, str) else list(req.input)
     if not inputs:
         raise HTTPException(status_code=400, detail="No input provided")
 
+    input_descriptors = [
+        {
+            "index": idx,
+            "hash": hashlib.sha256(text.encode("utf-8")).hexdigest()[:12] if text else None,
+            "chars": len(text),
+            "preview": text[:160] if text else "",
+        }
+        for idx, text in enumerate(inputs[:10])
+    ]
+    logger.info(
+        "embeddings.create.start",
+        extra={
+            "trace_id": trace_id,
+            "requested_model": req.model,
+            "collection": req.collection or "notes",
+            "upsert": req.upsert,
+            "input_count": len(inputs),
+            "note_ids_supplied": len(req.note_ids or []),
+            "user_ids_supplied": len(req.user_ids or []) if req.user_ids else 0,
+            "chunk_policy_override": str(req.chunk_policy) if req.chunk_policy else None,
+            "sample_inputs": input_descriptors,
+        },
+    )
+
     settings = get_settings()
     dim = settings.rag_embedding_model_output or settings.embedding_default_dim or 1536
 
-    # Expand and chunk any long inputs
+    # Expand inputs according to detected chunk boundary policies
     expanded_inputs: List[str] = []
-    input_note_ids: List[str] | None = None
-    if isinstance(req.note_ids, list):
-        input_note_ids = []
-    for idx, text in enumerate(inputs):
-        pieces = _split_text(text)
-        if input_note_ids is not None:
-            # replicate note id per chunk
-            nid = req.note_ids[idx] if req.note_ids and idx < len(req.note_ids) else ""
-            input_note_ids.extend([nid] * len(pieces))
-        expanded_inputs.extend(pieces)
+    chunk_rows: List[Dict[str, Any]] = []
+    policy_summaries: List[Dict[str, Any]] = []
 
-    if input_note_ids is not None:
-        req.note_ids = input_note_ids
+    expanded_note_ids: List[str] | None = [] if isinstance(req.note_ids, list) else None
+    expanded_user_ids: List[str] | None = [] if isinstance(req.user_ids, list) else None
+    expanded_statuses: List[str] | None = [] if isinstance(req.statuses, list) else None
+    expanded_metadatas_input: List[str] | None = [] if isinstance(req.metadatas, list) else None
+
+    def _value_from_list(values: Optional[List[str]], index: int) -> str:
+        if isinstance(values, list) and index < len(values):
+            return values[index]
+        return ""
+
+    for idx, text in enumerate(inputs):
+        note_id_value = _value_from_list(req.note_ids, idx)
+        metadata_context = {"input_index": idx, "note_id": note_id_value, "trace_id": trace_id}
+        policy_start = time.perf_counter()
+        decision = await detect_chunk_policy(text, override=req.chunk_policy, metadata=metadata_context)
+        logger.info(
+            "embeddings.create.policy_decision",
+            extra={
+                "trace_id": trace_id,
+                "input_index": idx,
+                "note_id": note_id_value,
+                "policy": decision.policy.value,
+                "reason": decision.reason,
+                "source": decision.source,
+                "tool_used": decision.tool_used,
+                "duration_ms": round((time.perf_counter() - policy_start) * 1000, 2),
+            },
+        )
+        policy_summaries.append(
+            {
+                "input_index": idx,
+                "policy": decision.policy.value,
+                "source": decision.source,
+                "reason": decision.reason,
+                "tool_used": decision.tool_used,
+            }
+        )
+
+        chunk_list = chunk_text(
+            text,
+            policy=decision.policy,
+            settings=settings,
+            max_tokens=settings.chunk_target_tokens,
+            overlap_tokens=settings.chunk_overlap_tokens,
+        )
+        if not chunk_list:
+            chunk_list = [Chunk(text=text or "", index=0, total=1, policy=decision.policy)]
+
+            chunk_count = len(chunk_list)
+            for chunk in chunk_list:
+                chunk_hash = hashlib.sha256((chunk.text or "").encode("utf-8")).hexdigest()[:12] if chunk.text else None
+                expanded_inputs.append(chunk.text)
+                chunk_rows.append(
+                    {
+                        "text": chunk.text,
+                        "note_id": note_id_value,
+                    "input_index": idx,
+                    "chunk_index": chunk.index,
+                    "chunk_total": chunk.total,
+                        "policy": decision.policy.value,
+                        "policy_source": decision.source,
+                        "policy_reason": decision.reason,
+                        "policy_tool": decision.tool_used,
+                        "chunk_hash": chunk_hash,
+                    }
+                )
+                logger.info(
+                    "embeddings.create.chunk_detail",
+                    extra={
+                        "trace_id": trace_id,
+                        "input_index": idx,
+                        "chunk_index": chunk.index,
+                        "chunk_total": chunk.total,
+                        "chunk_policy": decision.policy.value,
+                        "note_id": note_id_value,
+                        "chunk_hash": chunk_hash,
+                        "chunk_chars": len(chunk.text),
+                        "chunk_preview": chunk.text[:160],
+                    },
+                )
+
+        if expanded_note_ids is not None:
+            expanded_note_ids.extend([note_id_value] * chunk_count)
+        if expanded_user_ids is not None:
+            user_val = _value_from_list(req.user_ids, idx)
+            expanded_user_ids.extend([user_val] * chunk_count)
+        if expanded_statuses is not None:
+            status_val = _value_from_list(req.statuses, idx)
+            expanded_statuses.extend([status_val] * chunk_count)
+        if expanded_metadatas_input is not None:
+            meta_val = _value_from_list(req.metadatas, idx)
+            expanded_metadatas_input.extend([meta_val] * chunk_count)
+
+    if expanded_note_ids is not None:
+        req.note_ids = expanded_note_ids
+    if expanded_user_ids is not None:
+        req.user_ids = expanded_user_ids
+    if expanded_statuses is not None:
+        req.statuses = expanded_statuses
+    if expanded_metadatas_input is not None:
+        req.metadatas = expanded_metadatas_input
+
+    if not expanded_inputs:
+        raise HTTPException(status_code=400, detail="Chunking produced no content to embed")
+
+    logger.info(
+        "embeddings.create.chunking_complete",
+        extra={
+            "trace_id": trace_id,
+            "expanded_count": len(expanded_inputs),
+            "original_count": len(inputs),
+            "policy_summaries": policy_summaries,
+        },
+    )
 
     # Generate vectors using real embedding model
     try:
         model_name = resolve_embedding_model(req.model or settings.rag_embedding_model)
     except NoSuchModelError as e:
         raise HTTPException(status_code=404, detail={"error": {"code": "model_not_found", "message": str(e), "model": e.model}})
-    vectors = _embed_texts(expanded_inputs, model_name, dim)
+    logger.info(
+        "embeddings.create.model_resolved",
+        extra={
+            "trace_id": trace_id,
+            "requested_model": req.model,
+            "resolved_model": model_name,
+        },
+    )
+    vectors = _embed_texts(expanded_inputs, model_name, dim, telemetry={"trace_id": trace_id, "stage": "content"})
+
+    logger.info(
+        "embeddings.create.vectors_ready",
+        extra={
+            "trace_id": trace_id,
+            "vector_count": len(vectors),
+            "dimensions": dim,
+        },
+    )
 
     if not req.upsert:
-        return {"model": req.model, "data": vectors, "dimensions": dim}
+        logger.info(
+            "embeddings.create.return_only",
+            extra={
+                "trace_id": trace_id,
+                "duration_ms": round((time.perf_counter() - operation_start) * 1000, 2),
+                "vector_count": len(vectors),
+            },
+        )
+        return {"model": req.model, "data": vectors, "dimensions": dim, "policies": policy_summaries}
 
     collection_name = req.collection or "notes"
     try:
+        logger.info(
+            "embeddings.milvus.ensure_connection",
+            extra={"trace_id": trace_id, "collection": collection_name},
+        )
         get_milvus()  # ensures connection
     except Exception as e:  # pragma: no cover
+        logger.exception(
+            "embeddings.milvus.connection_failed",
+            extra={"trace_id": trace_id, "collection": collection_name, "error": repr(e)},
+        )
         raise HTTPException(status_code=503, detail=f"Milvus connection failed: {e}")
 
     if not utility.has_collection(collection_name):
+        logger.error(
+            "embeddings.milvus.collection_missing",
+            extra={"trace_id": trace_id, "collection": collection_name},
+        )
         raise HTTPException(status_code=404, detail=f"Collection '{collection_name}' not found")
 
     coll = Collection(collection_name)
     # Identify schema ordering (skip auto id field). Expect a vector field named 'vector'.
     vector_field = next((f.name for f in coll.schema.fields if f.dtype.name == 'FLOAT_VECTOR'), None)
     if not vector_field:
+        logger.error(
+            "embeddings.milvus.vector_field_missing",
+            extra={"trace_id": trace_id, "collection": collection_name},
+        )
         raise HTTPException(status_code=500, detail="No FLOAT_VECTOR field in collection schema")
 
     # For the 'notes' collection we expect order: id(auto) vector note_id user_id status metadata
@@ -133,24 +347,33 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
 
     # Validate optional metadata lengths if provided
     def _validate_parallel(name: str, data: Optional[List[str]]):
-        if data is not None and len(data) != len(inputs):
-            raise HTTPException(status_code=400, detail=f"Field '{name}' length {len(data)} != inputs length {len(inputs)}")
+        if data is not None and len(data) != len(expanded_inputs):
+            raise HTTPException(status_code=400, detail=f"Field '{name}' length {len(data)} != chunked inputs length {len(expanded_inputs)}")
 
     _validate_parallel("note_ids", req.note_ids)
     _validate_parallel("user_ids", req.user_ids)
     _validate_parallel("statuses", req.statuses)
     _validate_parallel("metadatas", req.metadatas)
 
-    # Build enriched metadata baseline if needed
+    # Build enriched metadata baseline if needed, including chunk ordering and policy data
     enriched_metadatas: List[str] | None = None
     if req.metadatas is None:
         enriched_metadatas = []
-        for text in expanded_inputs:
+        for idx, row in enumerate(chunk_rows):
+            text = row.get("text", "")
             first_line = text.strip().splitlines()[0][:120] if text.strip() else ""
             meta_obj = {
                 "pseudo_title": first_line,
                 "content_length": len(text),
                 "created_at": datetime.utcnow().isoformat(),
+                "chunk_index": row.get("chunk_index", 0),
+                "chunk_total": row.get("chunk_total", 1),
+                "chunk_policy": row.get("policy"),
+                "chunk_policy_source": row.get("policy_source"),
+                "chunk_policy_reason": row.get("policy_reason"),
+                "chunk_policy_tool": row.get("policy_tool"),
+                "input_index": row.get("input_index"),
+                "note_id": row.get("note_id"),
             }
             enriched_metadatas.append(json.dumps(meta_obj))
     for fname in remaining_fields:
@@ -166,17 +389,43 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
             payload.append(["" for _ in expanded_inputs])
 
     try:
+        logger.info(
+            "embeddings.milvus.insert",
+            extra={
+                "trace_id": trace_id,
+                "collection": collection_name,
+                "vector_field": vector_field,
+                "vector_count": len(vectors),
+                "payload_fields": remaining_fields,
+            },
+        )
         coll.insert(payload)
         # 😎 Flush to ensure data is persisted and queryable immediately. Without an explicit
         # flush Milvus may report num_entities=0 briefly and queries can return no vectors
         # right after insertion (especially in tests that immediately list vectors).
         try:  # pragma: no cover - external system timing
             coll.flush()
+            logger.info(
+                "embeddings.milvus.flush",
+                extra={"trace_id": trace_id, "collection": collection_name},
+            )
         except Exception:
             # Non-fatal; proceed even if flush fails, data should become available eventually.
+            logger.warning(
+                "embeddings.milvus.flush_failed",
+                extra={"trace_id": trace_id, "collection": collection_name},
+            )
             pass
         coll.load()
+        logger.info(
+            "embeddings.milvus.load",
+            extra={"trace_id": trace_id, "collection": collection_name},
+        )
     except Exception as e:  # pragma: no cover
+        logger.exception(
+            "embeddings.milvus.insert_failed",
+            extra={"trace_id": trace_id, "collection": collection_name, "error": repr(e)},
+        )
         raise HTTPException(status_code=500, detail=f"Milvus insert failed: {e}")
 
     # Mark associated notes as embedded (if note_ids supplied)
@@ -192,10 +441,41 @@ async def create_embeddings(req: EmbeddingRequest, session: AsyncSession = Depen
                     note.embedded_at = datetime.utcnow()
                 await session.flush()
                 await session.commit()
+                logger.info(
+                    "embeddings.notes.mark_embedded",
+                    extra={
+                        "trace_id": trace_id,
+                        "note_ids": list(ids_set),
+                        "updated_count": len(ids_set),
+                    },
+                )
         except Exception:  # pragma: no cover - don't fail main response
+            logger.warning(
+                "embeddings.notes.mark_embedded_failed",
+                extra={"trace_id": trace_id, "note_ids": list(ids_set) if req.note_ids else []},
+            )
             pass
 
-    return {"model": model_name, "data": vectors, "dimensions": dim, "collection": collection_name, "count": len(vectors)}
+    total_duration_ms = round((time.perf_counter() - operation_start) * 1000, 2)
+    logger.info(
+        "embeddings.create.finish",
+        extra={
+            "trace_id": trace_id,
+            "collection": collection_name,
+            "vector_count": len(vectors),
+            "duration_ms": total_duration_ms,
+            "upsert": req.upsert,
+        },
+    )
+
+    return {
+        "model": model_name,
+        "data": vectors,
+        "dimensions": dim,
+        "collection": collection_name,
+        "count": len(vectors),
+        "policies": policy_summaries,
+    }
 
 
 @router.delete("/{note_id}", summary="Delete embeddings for a note (and reset status)", status_code=204)

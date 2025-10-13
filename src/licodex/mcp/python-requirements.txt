@@ -10,4 +10,3 @@ langchain-community==0.2.11
 langgraph==0.0.64
 llama-cpp-python==0.2.90
 mcp==1.17.0
-

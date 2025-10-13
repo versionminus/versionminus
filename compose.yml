@@ -1,4 +1,5 @@
 services:
+  # BACKEND ####################################################################
   milvus-etcd:
     container_name: licodex-milvus-etcd
     image: quay.io/coreos/etcd:v3.5.0
@@ -86,10 +87,6 @@ services:
     networks:
       - licodex
 
-  # MODELHUB_API_KEY=paste \\
-  # MODELHUB_BASE_URL=paste \\
-  # MODELHUB=paste \\
-  # docker compose up -d api
   api:
     build:
       context: .
@@ -100,14 +97,36 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      mcp:
+        condition: service_started
+      otel-collector:
+        condition: service_started
     ports:
       - "8000:8000"
     environment:
       - MODELHUB_API_KEY
       - MODELHUB_BASE_URL
       - MODELHUB
+      - OTEL_SERVICE_NAME=licodex-api
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_TRACES_SAMPLER=parentbased_always_on
+      - OTEL_EXPORTER_OTLP_INSECURE=true
     networks:
       - licodex
+
+  mcp:
+    build:
+      context: .
+      dockerfile: src/licodex/mcp/Dockerfile
+    image: licodex-mcp:1.0.0
+    container_name: licodex-mcp
+    restart: unless-stopped
+    environment:
+      - CHUNK_POLICY_MODEL_PATH
+    networks:
+      - licodex
+
+  # FRONTEND ###################################################################
   web:
     build:
       context: .
@@ -122,6 +141,119 @@ services:
     networks:
       - licodex
 
+  # OBSERVABILITY ##############################################################
+  loki:
+    image: grafana/loki:2.9.4
+    container_name: licodex-loki
+    command: -config.file=/etc/loki/config.yml
+    volumes:
+      - ./src/licodex/observability/loki/config.yml:/etc/loki/config.yml:ro
+      - licodex-loki-data:/loki
+    ports:
+      - "3100:3100"
+    networks:
+      - licodex
+
+  # Log forwarder/shipper
+  #
+  # Tails Docker container logs on the host, parses JSON, adds basic labels, and
+  # pushes logs into Loki for centralized search and retention.
+  fluent-bit:
+    image: fluent/fluent-bit:2.1.8
+    container_name: licodex-fluent-bit
+    environment:
+      DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-local}
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./src/licodex/observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./src/licodex/observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+    depends_on:
+      - loki
+    networks:
+      - licodex
+
+  # Distributed tracing backend
+  #
+  # Stores traces sent via OTLP (through the OTEL Collector). Lets you view
+  # request spans/timelines in Grafana and correlate them with logs/metrics.
+  tempo:
+    image: grafana/tempo:2.2.2
+    container_name: licodex-tempo
+    command: -config.file=/etc/tempo/tempo.yml
+    volumes:
+      - ./src/licodex/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - licodex-tempo-data:/var/tempo
+    ports:
+      - "3200:3200"
+    networks:
+      - licodex
+
+  # Vendor‑neutral telemetry router
+  #
+  # Receives OTLP data (traces and custom metrics) from the API SDKs/clients,
+  # batches and exports traces to Tempo and metrics to Prometheus (and logs to
+  # its console for debugging).
+  otel-collector:
+    image: otel/opentelemetry-collector:0.93.0
+    container_name: licodex-otel-collector
+    command:
+      - "--config=/etc/otelcol/config.yaml"
+    volumes:
+      - ./src/licodex/observability/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+      - "8889:8889"
+    depends_on:
+      - tempo
+    networks:
+      - licodex
+
+  # Metrics collection and storage
+  #
+  # Scrapes /metrics endpoints (API, Milvus, OTEL collector), stores time series
+  # and powers Grafana metric queries and alerting rules.
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: licodex-prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    volumes:
+      - ./src/licodex/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - licodex-prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - otel-collector
+    networks:
+      - licodex
+
+# Visualization and dashboards
+#
+# Connects to Prometheus (metrics), Loki (logs), and Tempo (traces). Use it to
+# build panels, explore queries, and correlate logs/metrics/traces via labels
+# like trace_id
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: licodex-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+    volumes:
+      - licodex-grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - loki
+      - tempo
+    networks:
+      - licodex
+
 volumes:
   licodex-db-data:
     name: licodex-db-data
@@ -131,6 +263,14 @@ volumes:
     name: licodex-milvus-minio
   licodex-milvus-etcd:
     name: licodex-milvus-etcd
+  licodex-loki-data:
+    name: licodex-loki-data
+  licodex-prometheus-data:
+    name: licodex-prometheus-data
+  licodex-tempo-data:
+    name: licodex-tempo-data
+  licodex-grafana-data:
+    name: licodex-grafana-data
 
 networks:
   licodex:

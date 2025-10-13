@@ -2,3 +2,4 @@
 -r ../tests/python-requirements.txt
 
 debugpy==1.8.1
+huggingface-hub==0.35.3
