@@ -28,3 +28,4 @@ python3-pip
 build-essential
 git
 telnet
+git-lfs

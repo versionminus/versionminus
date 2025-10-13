@@ -45,6 +45,60 @@ This repository contains a live coding exercise for building a GenAI powered not
 
 # Contributing
 
+## docker compose
+
+The solution is orchestrated by the following containers (the containers run locally in the docker network `licodex` and remotely in the K8s network)
+
+```sh
+licodex-web               # react client (see licodex.sdk.ts)
+licodex-api               # REST API
+licodex-mcp               # MCP tools
+licodex-db                # postgres for context & user data (see licodex.models)
+licodex-milvus            # embed: vector database
+licodex-milvus-minio      # embed: object storage
+licodex-milvus-etcd       # embed: metadata KV
+licodex-grafana           # obs: query, dashboard
+licodex-loki              # obs: logs
+licodex-fluent-bit        # obs: logs
+licodex-prometheus        # obs: metrics
+licodex-tempo             # obs: traces
+licodex-otel-collector    # obs: telemetry
+```
+
+Flow diagram
+
+```sh
+licodex-web
+|
+| HTTPS/REST + SDK
+v
+licodex-api
+|---> licodex-db
+|---> licodex-milvus
+|     |---> licodex-milvus-minio
+|     |---> licodex-milvus-etcd
+|
+|---> licodex-mcp
+|
+|---> licodex-otel-collector
+|      |----> licodex-tempo
+|      |----> licodex-prometheus
+|
+| Logs (stdout JSON)
+v
+licodex-fluent-bit
+|
+| push
+|
+v
+licodex-loki
+
+licodex-grafana
+|---> licodex-prometheus
+|---> licodex-loki
+|---> licodex-tempo
+```
+
 ## Devcontainer
 
 ```sh
@@ -61,24 +115,53 @@ USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml bui
 # attach to the devcontainer with vscode
 ```
 
-## Local host
+## localhost
 
 ```sh
-# system
+# system dependencies
 sudo apt update && xargs -a .devcontainer/sys-requirements.txt sudo apt install -y --no-install-recommends && sudo apt clean
-
-# solution dependencies
-pip install -r .devcontainer/python-requirements.txt
-cd src/licodex/sdk/ts && npm install && npm run build
-cd ../../client/web && npm install && npm run build
-
-# solution
-docker compose build db milvus milvus-etcd milvus-minio api chunk-policy-mcp
-docker compose up -d db milvus milvus-etcd milvus-minio chunk-policy-mcp
-make up-api MODELHUB_API_KEY=paste MODELHUB_BASE_URL=paste MODELHUB=openai
-cd src/licodex/client/web && npm run dev
 ```
 
+```sh
+# python dependencies
+pip install -r .devcontainer/python-requirements.txt
+```
+
+```sh
+# typescript dependencies
+cd src/licodex/sdk/ts && npm install && npm run install
+cd ../../client/web && npm install && npm run install
+```
+
+```sh
+# observability
+docker compose up -d loki tempo prometheus
+```
+
+Download
+
+```sh
+# chunking agent
+git config --global credential.helper store
+hg auth login
+PATH="models/mistral-7b-instruct-v0.2-gguf"
+mkdir -p $PATH # .gitignore
+git lfs clone --depth=1 https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF $PATH
+git clone --filter=blob:none --no-checkout https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF $PATH && cd models/mistral-7b-instruct-v0.2-gguf && git sparse-checkout init --cone && git sparse-checkout set mistral-7b-instruct-v0.2.Q4_K_M.gguf && git checkout && git lfs pull --include="mistral-7b-instruct-v0.2.Q4_K_M.gguf"
+```
+
+```sh
+# backend
+docker compose build db milvus milvus-etcd milvus-minio api mcp
+docker compose up -d db milvus milvus-etcd milvus-minio mcp
+make up-api MODELHUB_API_KEY=paste MODELHUB_BASE_URL=paste MODELHUB=openai
+```
+
+```sh
+# frontend
+cd src/licodex/sdk/ts && npm run build
+cd ../../client/web && npm run build && npm run dev
+```
 ### Debugging
 
 Useful commands for debugging
@@ -123,12 +206,12 @@ CHUNK_POLICY_MODEL_THREADS=8   # adjust to available cores
 The MCP server runs independently to keep the agent tool surface modular.
 
 ```sh
-docker compose build chunk-policy-mcp
-docker compose up -d chunk-policy-mcp
+docker compose build mcp
+docker compose up -d mcp
 
 # point the API to the MCP endpoint
 CHUNK_POLICY_MCP_ENABLED=true
-CHUNK_POLICY_MCP_HOST=chunk-policy-mcp
+CHUNK_POLICY_MCP_HOST=mcp
 CHUNK_POLICY_MCP_PORT=8080
 ```
 

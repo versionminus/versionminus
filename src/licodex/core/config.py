@@ -100,7 +100,7 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CHUNK_TARGET_TOKENS"),
         description="Target token budget per chunk before overlap.")
     chunk_policy_detection_enabled: bool = Field(
-        default=False,
+        default=True,
         validation_alias=AliasChoices("CHUNK_POLICY_DETECTION_ENABLED"),
         description="Enable LangChain/LangGraph powered chunk policy detection before embedding."
     )
@@ -120,12 +120,12 @@ class Settings(BaseSettings):
         description="Number of CPU threads to allocate when running the chunk policy model."
     )
     chunk_policy_mcp_enabled: bool = Field(
-        default=False,
+        default=True,
         validation_alias=AliasChoices("CHUNK_POLICY_MCP_ENABLED"),
         description="If true, the chunk policy detector will call an MCP server for tool execution."
     )
     chunk_policy_mcp_host: str = Field(
-        default="licodex-chunk-policy-mcp",
+        default="licodex-mcp",
         validation_alias=AliasChoices("CHUNK_POLICY_MCP_HOST"),
         description="Hostname of the MCP server exposing chunk policy tools."
     )
