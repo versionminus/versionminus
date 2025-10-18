@@ -45,5 +45,5 @@ read the [docs](https://code.visualstudio.com/shortcuts/keyboard-shortcuts-macos
 | Scroll up/down (terminal)      | `Cmd` + `Up/Down`                 |
 | Zen Mode                       | `Cmd` + `K` `Z`                   |
 | inline copilot                 | `Cmd` + `I`                      |
-| open copilot                   | `Cmd` + `Shift` + `I`                      |
-| close copilot                   | `Cmd` + `Option` + `B`                      |
+| open codex                   | `Cmd` + `Shift` + `C` + `X`        |
+| close codex                   | `Cmd` + `Shift` + `C` + `X`       |
