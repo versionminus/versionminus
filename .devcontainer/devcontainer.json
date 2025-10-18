@@ -1,8 +1,5 @@
 {
-	"image": "ghcr.io/diogobaltazar/licodex-devcontainer:1.0.0",
 	"runArgs": [
-		"--name",
-		"licodex-devcontainer",
 		"--rm",
 		"--network",
 		"licodex"
