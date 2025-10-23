@@ -1,9 +1,11 @@
+import enum
 import uuid
 from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, String, func
 from sqlalchemy.orm import Mapped, mapped_column
-from sqlalchemy import String, DateTime, Boolean, Enum, func, ForeignKey
+
 from licodex.db.session import Base
-import enum
 
 
 class NoteStatus(str, enum.Enum):
