@@ -111,6 +111,8 @@ services:
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
       - OTEL_TRACES_SAMPLER=parentbased_always_on
       - OTEL_EXPORTER_OTLP_INSECURE=true
+    env_file:
+      - .env
     networks:
       - licodex
 
