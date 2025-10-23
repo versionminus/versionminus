@@ -1,4 +1,4 @@
-.PHONY: help dev lint format type test migrate install run pr smoke smoke-populate smoke-embed-populate
+.PHONY: help dev lint format type test migrate install run pr smoke smoke-populate smoke-embed-populate docker-clean docker clean
 
 PYTHON ?= python
 APP_MODULE ?= licodex.api.main:app
@@ -97,3 +97,15 @@ pr:
 		exit 1; \
 	fi; \
 	devtools/bin/pr.sh "$(title)"
+
+# docker #######################################################################
+#  make docker clean
+#  Purpose: run Docker cleanup script that removes containers, volumes, networks,
+#           and images referenced in this repository.
+docker:
+	@true
+
+docker-clean:
+	devtools/bin/clean-docker.sh
+
+clean: docker-clean
