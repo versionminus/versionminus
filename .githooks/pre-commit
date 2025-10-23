@@ -1,0 +1,69 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Ensure git hook runs from repository root
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+mapfile -t staged_files < <(git diff --cached --name-only --diff-filter=ACM)
+
+if [ "${#staged_files[@]}" -eq 0 ]; then
+    exit 0
+fi
+
+py_files=()
+run_sdk_lint=false
+run_web_lint=false
+
+for file in "${staged_files[@]}"; do
+    case "$file" in
+        *.py)
+            py_files+=("$file")
+            ;;
+        src/licodex/sdk/ts/*)
+            run_sdk_lint=true
+            ;;
+        src/licodex/client/web/*)
+            run_web_lint=true
+            ;;
+    esac
+done
+
+if [ "${#py_files[@]}" -gt 0 ]; then
+    if command -v ruff >/dev/null 2>&1; then
+        echo "Running Ruff on staged Python files..."
+        ruff check --force-exclude "${py_files[@]}"
+    else
+        echo "[lint] Ruff not found in PATH; skipping Python lint." >&2
+    fi
+fi
+
+run_npm_lint() {
+    local package_dir="$1"
+    if ! command -v npm >/dev/null 2>&1; then
+        echo "[lint] npm is required to lint $package_dir" >&2
+        return 1
+    fi
+    if [ ! -d "$package_dir/node_modules" ]; then
+        cat <<WARN >&2
+[lint] node_modules is missing in $package_dir.
+Run 'npm install' in $package_dir to enable linting for this package.
+WARN
+        return 1
+    fi
+
+    (cd "$package_dir" && npm run lint --silent)
+}
+
+if [ "$run_sdk_lint" = true ]; then
+    echo "Running ESLint for the TypeScript SDK..."
+    run_npm_lint "src/licodex/sdk/ts"
+fi
+
+if [ "$run_web_lint" = true ]; then
+    echo "Running ESLint for the web client..."
+    run_npm_lint "src/licodex/client/web"
+fi
+
+exit 0
+

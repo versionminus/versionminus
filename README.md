@@ -45,6 +45,19 @@ This repository contains a live coding exercise for building a GenAI powered not
 
 # Contributing
 
+## Git hooks
+
+Run the helper script once after cloning to enable the repository linting hooks:
+
+```sh
+./.github/bin/setup-git-hooks.sh
+```
+
+The configured `pre-commit` hook runs Ruff on staged Python files and executes the
+TypeScript ESLint tasks for both the SDK and the web client when relevant files
+change. Make sure the Python and Node.js dependencies described below are
+installed so the linters are available locally.
+
 ## docker compose
 
 The solution is orchestrated by the following containers (the containers run locally in the docker network `licodex` and remotely in the K8s network)
