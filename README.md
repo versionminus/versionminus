@@ -1,31 +1,272 @@
-# licodex: live coding exercise for a GenAI powered note-taking app
+# licodex
+
+---
 
 ## about
 
-This repository contains a live coding exercise for building a GenAI powered note-taking application called "licodex". The application allows users to create, manage, and search notes using natural language processing and AI capabilities.
+```xml
+<human-core-identity>
+  <audience>
+    A human software engineer new to the codebase who wants to become productive quickly and contribute a small, safe change within ~30–60 minutes.
+  </audience>
+
+  <constraints>
+    <item>Frequent context switching; low spare cognitive bandwidth.</item>
+    <item>Needs copy/paste runnable steps with sensible defaults.</item>
+    <item>Prefers short, verifiable loops and clear pass/fail signals.</item>
+    <item>Fast recovery from broken state without deep debugging.</item>
+  </constraints>
+
+  <goals>
+    <goal>Run the full stack locally (API + DB + Milvus + Web + Observability).</goal>
+    <goal>Understand the architecture and component responsibilities at a glance.</goal>
+    <goal>Identify a good first task and where to implement it.</goal>
+    <goal>Make a change, run checks/tests, verify locally, and open a PR.</goal>
+    <goal>Know how to inspect logs, metrics, and traces to debug.</goal>
+  </goals>
+
+  <golden-paths>
+    <fast-start>
+      docker network create licodex || true
+      cp -n .env.example .env || true
+      docker compose up -d milvus-etcd milvus-minio milvus db otel-collector prometheus tempo loki fluent-bit grafana
+      docker compose up -d mcp api web
+      echo API: http://localhost:8000/health && echo Docs: http://localhost:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
+    </fast-start>
+    <api-only>
+      docker network create licodex || true
+      cp -n .env.example .env || true
+      docker compose up -d db
+      make run
+      # open http://localhost:8000/docs
+    </api-only>
+  </golden-paths>
+
+  <timeboxes>
+    <t5>5m: copy .env, start DB + API, open /docs.</t5>
+    <t15>15m: start web dev server, hit an endpoint, add a unit test.</t15>
+    <t30>30–60m: implement tiny change (router/service), run lint/format/type/tests, open PR.</t30>
+  </timeboxes>
+
+  <reading-order>
+    <step>Contributors Quickstart (copy/paste setup + run).</step>
+    <step>Project Layout (map features to folders and layers).</step>
+    <step>Common Workflows (build, run, test, lint, format, type-check).</step>
+    <step>Environment (what variables matter and why).</step>
+    <step>Troubleshooting (fast fixes for common issues).</step>
+    <step>TODOs (pick a "good first task").</step>
+  </reading-order>
+
+  <contribution-checklist>
+    <item>Fork or branch from dev; create a feature branch.</item>
+    <item>Copy .env, fill required secrets (MODELHUB_*; optional AUTH_*).</item>
+    <item>Start services via Docker; verify API at /docs and Web UI.</item>
+    <item>Follow layering: schema → router → service → repo → model.</item>
+    <item>Write tests (pytest). Keep changes small and focused.</item>
+    <item>Quality gates: ruff (lint/format), mypy (types), pytest (unit/integration).</item>
+    <item>Conventional Commits; open PR with clear scope and context.</item>
+  </contribution-checklist>
+
+  <reset-and-repair>
+    <clean-api>docker compose down -v api || true && docker compose up -d api</clean-api>
+    <clean-db>docker compose down -v db || true && docker compose up -d db</clean-db>
+    <rebuild-api>make build-api && docker compose up -d api</rebuild-api>
+    <logs>docker compose logs -f api</logs>
+  </reset-and-repair>
+
+  <state-audit>
+    <containers>docker compose ps</containers>
+    <health>curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health</health>
+    <db>docker exec licodex-db psql -U licodex -d licodex -c "select 1"</db>
+    <observability>open Grafana at http://localhost:3000 and check data sources</observability>
+  </state-audit>
+
+  <cheatsheet>
+    <lint>make lint</lint>
+    <format>make format</format>
+    <types>make type</types>
+    <tests>make ut && make it</tests>
+    <smoke>make smoke-populate && make smoke-embed-populate</smoke>
+    <pr>make pr title="feat: concise description"</pr>
+  </cheatsheet>
+
+  <first-tasks>
+    <task>Verify an API router adheres to schema → router → service → repo → model, and add/adjust a unit test.</task>
+    <task>Improve an error path to use licodex.core.error with a clear message.</task>
+    <task>Small React component rename or prop typing fix in web client.</task>
+  </first-tasks>
+
+  <conventions>
+    <python>Ruff for lint/format; Mypy for typing; Pytest markers: unit, integration, smoke.</python>
+    <errors>Prefer explicit domain errors (licodex.core.error) with meaningful messages.</errors>
+    <persistence>Favor soft deletes; consider GC for soft-deleted items.</persistence>
+    <observability>Log JSON to stdout; traces/metrics via OTEL; inspect in Grafana/Loki/Tempo.</observability>
+    <api>FastAPI; keep endpoints thin; business logic in services; repositories abstract IO.</api>
+    <vectordb>Milvus for embeddings; align metadata and ordering with collection schema fields.</vectordb>
+    <security>OIDC optional; respect CORS; never commit secrets; use .env.</security>
+  </conventions>
+
+  <success-criteria>
+    <item>I can run the stack and see /docs and the Web UI.</item>
+    <item>I can make a trivial change (e.g., small router/service fix) and verify it.</item>
+    <item>I can add/execute a unit test and pass lint/format/type checks.</item>
+    <item>I can open a PR that passes CI and is easy to review.</item>
+  </success-criteria>
+</human-core-identity>
+```
+
+## Contributors Quickstart
+
+- Prerequisites
+  - Docker and Docker Compose
+
+- One‑time setup
+  - Create the shared docker network: `docker network create licodex`
+  - Copy env: `cp .env.example .env` and set required values
+    - `MODELHUB_API_KEY`, `MODELHUB_BASE_URL`, `MODELHUB`
+    - `AUTH_*` variables
+
+- Start core services (database, vector store, observability)
+  - `docker compose up -d milvus-etcd milvus-minio milvus db otel-collector prometheus tempo loki fluent-bit grafana`
+
+- Start API
+  - `docker compose up -d mcp`
+  - `docker compose up -d api`
+  - Verify: `curl http://localhost:8000/health` → `200 OK`
+  - Docs: open `http://localhost:8000/docs`
+
+- Start Web UI (choose one)
+  - Docker (static build): `docker compose up -d web` → `http://localhost:5173`
+  - Dev server: `cd src/licodex/client/web && npm install && npm run dev`
+
+- First data smoke tests (optional)
+  - Populate threads/messages: `make smoke-populate clean_before=1`
+  - Populate embeddings: `make smoke-embed-populate`
+
+## Project Layout
+
+- API: `src/licodex/api` (FastAPI app, Dockerfile)
+- Domain models: `src/licodex/models`
+- Repositories: `src/licodex/repositories`
+- Services: `src/licodex/services`
+- Schemas: `src/licodex/schemas`
+- Vector DB (Milvus) assets: `src/licodex/milvus`
+- Observability: `src/licodex/observability/{otel-collector,loki,tempo,prometheus}`
+- SDKs: `src/licodex/sdk/{python,ts}`
+- Clients: `src/licodex/client/{web,cli,chatgpt}`
+- DB image + migrations: `src/licodex/db` (alembic in `src/licodex/alembic`)
+
+## Common Workflows
+
+- Run everything
+  - `docker compose up -d` (ensure `docker network create licodex` ran once)
+
+- Rebuild images
+  - All: `make build`
+  - API only: `make build-api`
+  - DB only: `make build-db`
+
+- Local development (API hot‑reload)
+  - Python deps: `pip install -r .devcontainer/python-requirements.txt`
+  - App: `pip install -e .`
+  - Run: `make run` → `http://localhost:8000`
+
+- Frontend development
+  - SDK build: `cd src/licodex/sdk/ts && npm install && npm run build`
+  - Web: `cd src/licodex/client/web && npm install && npm run dev`
+
+- Quality gates
+  - Lint: `make lint`
+  - Format: `make format`
+  - Types: `make type`
+  - Tests: `pytest` or `make ut` / `make it`
+
+- Database
+  - DB container runs migrations automatically on start
+  - Connect: `docker exec -it licodex-db psql -U licodex -d licodex`
+
+- Observability
+  - Grafana: `http://localhost:3000` (admin/admin)
+  - Prometheus: `http://localhost:9090`
+  - Loki: `http://localhost:3100`
+  - Tempo: `http://localhost:3200`
+
+## Environment
+
+- Copy `.env.example` to `.env` and adjust
+- Key variables
+  - API: `API_PREFIX`, `LOG_LEVEL`, `ENABLE_CORS`
+  - Database: `POSTGRES_*`, `DATABASE_URL`
+  - Chunking/RAG: `CHUNK_*`
+  - MCP: `CHUNK_POLICY_MCP_*`
+  - Auth: `AUTH_*`
+
+## Troubleshooting
+
+- Network missing: `docker network create licodex`
+- Loki exits: restart with `docker compose up -d loki` (known local issue)
+- Milvus not ready: ensure `milvus-etcd` and `milvus-minio` are healthy; then `docker compose up -d milvus`
+- Ports busy: stop conflicting services or change published ports in `compose.yml`
+- API cannot reach DB: confirm `.env` matches compose host `db` and port `5432`
+
+## Contributing Workflow
+
+- Branch from `main`
+- Keep changes small and scoped
+- Add or update tests under `tests`
+- Run `make lint format type ut`
+- Open PR with clear title: `make pr title="feat: concise description"`
+
+
+`licodex` allows users to create, manage, and search notes using natural language processing and AI capabilities.
 
 ## TODOs
 
+- user
+  - I want to access this application in ChatGPT
+  - I want to be able to have ChatGPT prompting me for consent to access my notes
+  - I will then be able to
+    - lst my notes
+    - edit my notes
+    - delete my notes
+    - create new notes
+    - ask questions and relevant notes retrieved, if any, and answer taking into account the notes (listing the notes as references).
+  - I will also be able to ask questions about the contents of the notes:
+    - *"what notes did I take on my trip to Japan?"*
+    - *"Did I ever write about Nabokov?"*
+  - I want to be able to make meta questions about the notes:
+    - *"what are the main topics I covered in my notes last week?"*
+    - *"How many notes have I taken?"*
+    - *"With what frequency?"*
+    - *"What is the average length of my notes and the size in Kb?"*
+    - *"What are the most common topics in my notes?"*
+  - I want to be able to ask that actions be completed in the system
+    - *"from this conversation generate a new note"* (push notification to `MFA`, then to app)
+    - *"delete these notes"* (`MFA`)
+    - *"signout"*
+    - *"create a new note"* (`MFA`)
+  - I want to be able to ask questions about the application:
+    - *"how many notes can I create?"*
+    - *"what is licodex?"*
+    - *"who built licodex?"*
+  -  I want to be able to ask questions about the system (will depend on my permissions):
+    - *"what is the current load on the system?"*
+    - *"how many users are currently online?"*
+    - *"what is the backend of this solution?"*
+    - *"block user"*
+- authorisation
+- expand to manage apple and google calendars (notes have tags like `nature in [chore, ...]`, `latest`, `earliest`, `delayed`, `criticality`, ...)
+- expand to report on financial transactions (OpenBank) and detect patters of behaviour
+- publish the SDK, docker compose build web should install the SDK, not copy it
 - meaningful errors, e.g.: no user found on new note creation (`licodex.core.error`)
 - verify that all router methods follow the pattern: schema -> router -> service -> repo -> model
 - implement soft deletes in all models
 - implement garbage collector for soft deleted items
 - finish milvus setup: siphonn.utils -> licodex.core.config (get ConfigStore values)
-- container for react
 - nginx for CORS
 - verify if we can remove licodex.core.milvus
 - (embeddings router) verify different ordering of payload arrays: Silent misalignment of data. Always derive order from `coll.schema.fields`
-- host model
-- "return list of most similar vacancies"
 - robustness and performance
-- consider:
-    - tested
-    - deploy (EKS)
-    - upgrade (docker pushes, kubectl)
-    - maintain (microservices, monitoring, logging)
-    - monitor
-    - scale
-    - ⚠️ host model
 - retrieval
     - Return richer metadata (distance scores, highlight spans) to the chat layer.
     - Switch to cosine similarity if you normalize vectors—currently hard-coded L2.
@@ -39,7 +280,7 @@ This repository contains a live coding exercise for building a GenAI powered not
     - add regression tests for each policy splitter variant
     - extend policy detector prompt with project-specific heuristics
 - agentic behaviour
-    - ⚠️ MCP
+    - MCP
     - tool selection
 - rename react components
 
@@ -129,38 +370,29 @@ pip install -r .devcontainer/python-requirements.txt
 
 ```sh
 # typescript dependencies
-cd src/licodex/sdk/ts && npm install && npm run install
-cd ../../client/web && npm install && npm run install
+cd src/licodex/sdk/ts && npm install
+cd ../../client/web && npm install
+cd ../../../..
 ```
 
 ```sh
-# observability
+# observability TODO loki shuts down
 docker compose up -d loki tempo prometheus
-```
-
-Download
-
-```sh
-# chunking agent
-git config --global credential.helper store
-hg auth login
-PATH="models/mistral-7b-instruct-v0.2-gguf"
-mkdir -p $PATH # .gitignore
-git lfs clone --depth=1 https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF $PATH
-git clone --filter=blob:none --no-checkout https://huggingface.co/TheBloke/Mistral-7B-Instruct-v0.2-GGUF $PATH && cd models/mistral-7b-instruct-v0.2-gguf && git sparse-checkout init --cone && git sparse-checkout set mistral-7b-instruct-v0.2.Q4_K_M.gguf && git checkout && git lfs pull --include="mistral-7b-instruct-v0.2.Q4_K_M.gguf"
 ```
 
 ```sh
 # backend
 docker compose build db milvus milvus-etcd milvus-minio api mcp
 docker compose up -d db milvus milvus-etcd milvus-minio mcp
-make up-api MODELHUB_API_KEY=paste MODELHUB_BASE_URL=paste MODELHUB=openai
+
+cp .env.example .env
+# edit .env as needed (--force-recreate will apply changes to .env)
+docker compose up -d --force-recreate api
 ```
 
 ```sh
 # frontend
-cd src/licodex/sdk/ts && npm run build
-cd ../../client/web && npm run build && npm run dev
+cd src/licodex/client/web && npm run dev
 ```
 ### Debugging
 
@@ -215,4 +447,78 @@ CHUNK_POLICY_MCP_HOST=mcp
 CHUNK_POLICY_MCP_PORT=8080
 ```
 
-When MCP is disabled, heuristics still provide reasonable defaults (code blocks → `code_blocks`, short notes → `minimal_words`, etc.). Extend `src/licodex/mcp/chunk_policy_server.py` to experiment with richer detectors or additional tools.
+When MCP is disabled, heuristics still provide reasonable defaults (code blocks → `code_blocks`, short notes → `minimal_words`, etc.). Extend `src/licodex/mcp/main.py` to experiment with richer detectors or additional tools.
+
+
+```sh
+# create vector store
+curl https://api.openai.com/v1/vector_stores \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -H "Content-Type: application/json" \
+  -H "OpenAI-Beta: assistants=v2" \
+  -d '{
+    "name": "versionminus-notes"
+  }'
+VSID=vs_68f574d862dc8191842f22916d97a1c8
+
+curl -s -X POST https://api.openai.com/v1/files \
+-H "Authorization: Bearer $OPENAI_API_KEY" \
+-H "OpenAI-Beta: assistants=v2" \
+-F "purpose=assistants" \
+-F "file=@README.md"
+FID=file-R2aX3XmpRi1AXorNpp2CSa
+
+curl -s -X POST https://api.openai.com/v1/vector_stores/$VSID/files \
+-H "Authorization: Bearer $OPENAI_API_KEY" \
+-H "Content-Type: application/json" \
+-H "OpenAI-Beta: assistants=v2" \
+-d '{"file_id":"file-R2aX3XmpRi1AXorNpp2CSa"}'
+
+# expose MCP
+ngrok config add-authtoken <paste>
+ngrok http 8000
+```
+
+```sh
+curl https://api.openai.com/v1/responses \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $OPENAI_API_KEY" \
+  -d '{
+  "model": "o4-mini-deep-research",
+  "input": [
+    {
+      "role": "developer",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "You are a research assistant that searches MCP servers to find answers to your questions."
+        }
+      ]
+    },
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "input_text",
+          "text": "What is licodex about?"
+        }
+      ]
+    }
+  ],
+  "reasoning": {
+    "summary": "auto"
+  },
+  "tools": [
+    {
+      "type": "mcp",
+      "server_label": "cats",
+      "server_url": "https://otilia-exergonic-janise.ngrok-free.dev/sse/",
+      "allowed_tools": [
+        "search",
+        "fetch"
+      ],
+      "require_approval": "never"
+    }
+  ]
+}'
+```
