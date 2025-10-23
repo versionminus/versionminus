@@ -1,5 +1,6 @@
+from __future__ import annotations
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field, AliasChoices, SecretStr
+from pydantic import Field, AliasChoices, SecretStr, model_validator
 from functools import lru_cache
 from typing import Optional
 
@@ -9,37 +10,37 @@ class Settings(BaseSettings):
         default="licodex",
         validation_alias=AliasChoices("APP_NAME"),
     )
-    environment: str = Field(default="dev", validation_alias=AliasChoices("ENVIRONMENT", "ENV"))
-    log_level: str = Field(default="INFO")
-    api_prefix: str = "/api/v1"
-    enable_cors: bool = True
+    environment: str = Field(default="local", validation_alias=AliasChoices("DEPLOYMENT_ENV"))
+    api_prefix: str = Field(default="/api/v1", validation_alias=AliasChoices("API_PREFIX"))
+    enable_cors: bool = Field(default=True, validation_alias=AliasChoices("ENABLE_CORS"))
     api_host: str = Field(default="0.0.0.0")
     api_port: int = Field(default=8000)
 
+    log_level: str = Field(default="INFO", validation_alias=AliasChoices("LOG_LEVEL"))
+
     # Database components (primary source of truth)
-    db_user: str = Field(default="licodex", validation_alias=AliasChoices("DB_USER", "POSTGRES_USER"))
-    db_password: str = Field(default="licodexpwd", validation_alias=AliasChoices("DB_PASSWORD", "POSTGRES_PASSWORD"))
-    db_host: str = Field(default="db", validation_alias=AliasChoices("DB_HOST", "POSTGRES_HOST"))
-    db_port: int = Field(default=5432, validation_alias=AliasChoices("DB_PORT", "POSTGRES_PORT"))
-    db_name: str = Field(default="licodex", validation_alias=AliasChoices("DB_NAME", "POSTGRES_DB"))
+    db_user: str = Field(default="licodex", validation_alias=AliasChoices("POSTGRES_USER"))
+    db_password: str = Field(default="licodexpwd", validation_alias=AliasChoices("POSTGRES_PASSWORD"))
+    db_host: str = Field(default="db", validation_alias=AliasChoices("POSTGRES_HOST"))
+    db_port: int = Field(default=5432, validation_alias=AliasChoices("POSTGRES_PORT"))
+    db_name: str = Field(default="licodex", validation_alias=AliasChoices("POSTGRES_DB"))
+    database_url: Optional[str] = Field(default="postgresql+asyncpg://licodex:licodexpwd@db:5432/licodex", validation_alias=AliasChoices("DATABASE_URL"))
 
-    # Optional full URL override (if set this wins)
-    database_url: Optional[str] = None  # expects async driver form if provided
-
-    # External model / AI marketplace configuration
-    # The API key intentionally has no default and should only come from the environment (.env)
+    # ⚠️ inject from runtime only (.env or runtime)
     modelhub_api_key: Optional[SecretStr] = Field(
         default=None,
-        validation_alias=AliasChoices("MODELHUB_API_KEY"),
-        description="Secret API key for external AI marketplace provider",
+        validation_alias=AliasChoices("OPENAI_API_KEY"),
+        description="Secret API key for external AI provider",
     )
+    # include all base_urls
     modelhub_base_url: Optional[str] = Field(
-        default=None,
+        default="https://api.openai.com/v1",
         validation_alias=AliasChoices("MODELHUB_BASE_URL"),
         description="Base URL for model provider / marketplace",
     )
+    # include all modelhubs
     modelhub: Optional[str] = Field(
-        default=None,
+        default="openai",
         validation_alias=AliasChoices("MODELHUB"),
         description="Logical model provider identifier",
     )
@@ -100,12 +101,16 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("CHUNK_TARGET_TOKENS"),
         description="Target token budget per chunk before overlap.")
     chunk_policy_detection_enabled: bool = Field(
-        default=True,
+        default=False,
         validation_alias=AliasChoices("CHUNK_POLICY_DETECTION_ENABLED"),
         description="Enable LangChain/LangGraph powered chunk policy detection before embedding."
     )
+    # ⚠️ the user is welcome to save models locally wherever it prefers, but a
+    # default path is provided. Additionally, this same path has been added to
+    # `.gigitgnore`. Should the user provide a different path, don't forget to
+    # add it to `.gigitgnore`
     chunk_policy_model_path: Optional[str] = Field(
-        default=None,
+        default="models",
         validation_alias=AliasChoices("CHUNK_POLICY_MODEL_PATH"),
         description="Filesystem path to the GGUF model used for chunk policy detection (llama.cpp compatible)."
     )
@@ -115,12 +120,12 @@ class Settings(BaseSettings):
         description="Context window (tokens) for the local chunk policy model."
     )
     chunk_policy_model_threads: int = Field(
-        default=8,
+        default=16,
         validation_alias=AliasChoices("CHUNK_POLICY_MODEL_THREADS"),
         description="Number of CPU threads to allocate when running the chunk policy model."
     )
     chunk_policy_mcp_enabled: bool = Field(
-        default=True,
+        default=False,
         validation_alias=AliasChoices("CHUNK_POLICY_MCP_ENABLED"),
         description="If true, the chunk policy detector will call an MCP server for tool execution."
     )
@@ -185,15 +190,16 @@ class Settings(BaseSettings):
         validation_alias=AliasChoices("RETRIEVAL_SYSTEM_PROMPT_PATH"),
         description="Filesystem path to system prompt injected before user message when retrieval context exists."
     )
-
     # ------------------------------------------------------------------
     # Auth / OIDC (Auth0)
     # ------------------------------------------------------------------
+    # ⚠️ switch to True when running locally (.env or runtime)
     auth_enabled: bool = Field(
         default=False,
         validation_alias=AliasChoices("AUTH_ENABLED"),
         description="Enable OIDC bearer token verification (Auth0). When false, all routes are unauthenticated."
     )
+    # ⚠️ switch to True when running locally (.env or runtime)
     auth_testing_mode: bool = Field(
         default=False,
         validation_alias=AliasChoices("AUTH_TESTING_MODE"),
@@ -201,7 +207,7 @@ class Settings(BaseSettings):
     auth0_domain: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("AUTH_DOMAIN"),
-        description="Auth0 issuer or domain (full https URL like 'https://tenant.eu.auth0.com/' or bare domain)."
+        description="Auth0 issuer or domain (full https URL like 'https://{tenant}.eu.auth0.com/' or bare domain)."
     )
     auth0_api_audience: Optional[str] = Field(
         default=None,
@@ -211,13 +217,19 @@ class Settings(BaseSettings):
     auth0_client_id: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("AUTH_APPLICATION_CLIENT_ID"),
-        description="Auth0 application client ID (for future client credentials or introspection)."
+        description="Auth0 application client ID"
     )
     auth0_client_secret: Optional[SecretStr] = Field(
         default=None,
         validation_alias=AliasChoices("AUTH_APPLICATION_CLIENT_SECRET"),
         description="Auth0 application client secret (keep confidential)."
     )
+    auth0_application_name: Optional[SecretStr] = Field(
+        default="licodex",
+        validation_alias=AliasChoices("AUTH_APPLICATION_NAME"),
+        description="Auth0 application name."
+    )
+
     auth_algorithms: list[str] = Field(
         default=["RS256"],
         validation_alias=AliasChoices("AUTH_ALGORITHMS"),
@@ -232,78 +244,47 @@ class Settings(BaseSettings):
     @property
     def auth0_issuer(self) -> Optional[str]:
         """Normalized issuer URL with trailing '/' regardless of input format."""
-        if not self.auth0_domain:
+        raw = self.auth0_domain
+        if not raw:
             return None
-        d = self.auth0_domain.strip()
+        # Be defensive: ensure we are handling a string-like value
+        try:
+            d = str(raw).strip()
+        except Exception:
+            return None
+        if not d:
+            return None
+        # Remove any scheme if present
         if d.startswith("http://"):
             d = d[len("http://"):]
         elif d.startswith("https://"):
             d = d[len("https://"):]
+        # Drop any path/query after the host if provided
+        d = d.split("/", 1)[0]
         d = d.rstrip('/')
         return f"https://{d}/"
     model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
-    # Derived / convenience
-    @property
-    def effective_db_user(self) -> str:
-        if self.database_url:
-            # If user supplied full URL we attempt to parse pieces lazily
-            try:
-                from sqlalchemy.engine import url as sa_url
-                return sa_url.make_url(self.database_url).username or self.db_user
-            except Exception:
-                return self.db_user
-        return self.db_user
+    def _build_base(self):
+        """Compose a base PostgreSQL URL from individual components.
+
+        Returns a plain sync URL without a driver suffix, e.g.
+        postgresql://user:pass@host:port/db
+        """
+        user = str(self.db_user)
+        password = str(self.db_password)
+        host = str(self.db_host)
+        port = int(self.db_port)
+        name = str(self.db_name)
+
+        return f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
     @property
-    def effective_db_password(self) -> str:
-        if self.database_url:
-            try:
-                from sqlalchemy.engine import url as sa_url
-                return sa_url.make_url(self.database_url).password or self.db_password
-            except Exception:
-                return self.db_password
-        return self.db_password
-
-    @property
-    def effective_db_host(self) -> str:
-        if self.database_url:
-            try:
-                from sqlalchemy.engine import url as sa_url
-                return sa_url.make_url(self.database_url).host or self.db_host
-            except Exception:
-                return self.db_host
-        return self.db_host
-
-    @property
-    def effective_db_port(self) -> int:
-        if self.database_url:
-            try:
-                from sqlalchemy.engine import url as sa_url
-                return sa_url.make_url(self.database_url).port or self.db_port
-            except Exception:
-                return self.db_port
-        return self.db_port
-
-    @property
-    def effective_db_name(self) -> str:
-        if self.database_url:
-            try:
-                from sqlalchemy.engine import url as sa_url
-                return sa_url.make_url(self.database_url).database or self.db_name
-            except Exception:
-                return self.db_name
-        return self.db_name
-
-    def _build_base(self) -> str:
-        return f"postgresql://{self.effective_db_user}:{self.effective_db_password}@{self.effective_db_host}:{self.effective_db_port}/{self.effective_db_name}"
-
-    @property
-    def database_url_sync(self) -> str:
+    def database_url_sync(self):
         """Sync driver URL (used by Alembic)."""
-        if self.database_url:
+        if isinstance(self.database_url, str) and self.database_url.strip():
             # strip +asyncpg if present and coerce to psycopg driver unless user explicitly chose another
-            base = self.database_url.replace("+asyncpg", "")
+            base = self.database_url.strip().replace("+asyncpg", "")
             if "+psycopg" not in base and "+psycopg2" not in base:
                 base = base.replace("postgresql://", "postgresql+psycopg://", 1)
             return base
@@ -314,24 +295,12 @@ class Settings(BaseSettings):
         return base
 
     @property
-    def database_url_async(self) -> str:
+    def database_url_async(self):
         """Async driver URL (used by SQLAlchemy async engine)."""
-        if self.database_url:
-            return self.database_url
+        if isinstance(self.database_url, str) and self.database_url.strip():
+            return self.database_url.strip()
         return self._build_base().replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    def as_postgres_env_exports(self) -> str:
-        """Produce shell export lines for Postgres official image from current settings."""
-        import shlex
-        def q(v: str) -> str:
-            return shlex.quote(str(v))
-        lines = [
-            f"export POSTGRES_USER={q(self.effective_db_user)}",
-            f"export POSTGRES_PASSWORD={q(self.effective_db_password)}",
-            f"export POSTGRES_DB={q(self.effective_db_name)}",
-        ]
-        return "\n".join(lines)
-
 @lru_cache
-def get_settings() -> Settings:
+def get_settings():
     return Settings()
