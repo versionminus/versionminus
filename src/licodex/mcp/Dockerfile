@@ -14,5 +14,5 @@ COPY src /app/src
 
 ENV PYTHONPATH=/app/src
 
-CMD ["python", "-m", "licodex.mcp.chunk_policy_server"]
+CMD ["python", "-m", "licodex.mcp.main"]
 
