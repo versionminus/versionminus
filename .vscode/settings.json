@@ -4,8 +4,6 @@
     "terminal.integrated.tabs.enabled": true,
     "terminal.integrated.tabs.showActions": "never",
     "workbench.startupEditor": "none", // disable Welcome / Getting Started
-    "github.copilot.chat.codeGeneration.useInstructionFiles": true,
-    "github.copilot.chat.customInstructionsInSystemMessage": true,
     "debug.console.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
     "debug.console.fontSize": 11,
     "debug.console.lineHeight": 20,
@@ -16,15 +14,9 @@
     "debug.toolBarLocation": "docked",
     "debug.showVariableTypes": true,
     "chat.agent.maxRequests": 50,
-    "chat.instructionsFilesLocations": {
-        ".github/instructions/git": true,
-        ".github/instructions/code": true
-    },
     "chat.promptFilesLocations": {
         ".github/prompts/devcontainer": true
     },
-    "github.copilot.editor.enableCodeActions": true,
-    "github.copilot.chat.localeOverride": "en",
     "editor.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
     "terminal.integrated.fontFamily": "'Source Code Pro', Consolas, 'Courier New', monospace",
     "editor.fontSize": 11,
@@ -50,19 +42,6 @@
         "editor.formatOnSave": true,
         "editor.insertSpaces": true,
         "editor.tabSize": 2
-    },
-    "yaml.validate": true,
-    "yaml.format.enable": true,
-    "yaml.format.singleQuote": false,
-    "yaml.format.bracketSpacing": true,
-    "yaml.completion": true,
-    "yaml.hover": true,
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-workflow.json": ".github/workflows/*.yml",
-        "https://json.schemastore.org/github-action.json": ".github/actions/*/action.yml"
-    },
-    "pigments": {
-        "enabled": true
     },
     "workbench.editor.closeOnFileDelete": false, // prevent accidents
     "editor.smoothScrolling": true, // nice

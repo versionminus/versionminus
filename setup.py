@@ -71,7 +71,8 @@ setup(
     author=", ".join(__author__),  # Use authors as a single string for the author field
     long_description=long_description,
     long_description_content_type="text/markdown",
-    python_requires='>=3.8, <4',
+    # Project uses modern typing (PEP 585/604), requiring Python >= 3.10
+    python_requires='>=3.10, <4',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
     install_requires=list(parse_requirements('src/licodex/python-requirements.txt')),
