@@ -1,0 +1,16 @@
+<mxfile host="65bd71144e">
+    <diagram id="_nlR58wxuhwtLctXTlT-" name="Page-1">
+        <mxGraphModel dx="718" dy="421" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="0" pageScale="1" pageWidth="827" pageHeight="1169" background="#333333" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="8" value="" style="whiteSpace=wrap;html=1;aspect=fixed;fillColor=#1A1A1A;fontFamily=Source Code Pro;fontSource=https%3A%2F%2Ffonts.googleapis.com%2Fcss%3Ffamily%3DSource%2BCode%2BPro;verticalAlign=bottom;align=right;strokeColor=#1A1A1A;fontColor=light-dark(#EAE0C8,#EAE0C8);" vertex="1" parent="1">
+                    <mxGeometry x="157" y="319" width="80" height="80" as="geometry"/>
+                </mxCell>
+                <mxCell id="9" value="&lt;span style=&quot;color: rgb(234, 224, 200); font-family: &amp;quot;Source Code Pro&amp;quot;; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; letter-spacing: normal; orphans: 2; text-align: right; text-indent: 0px; text-transform: none; widows: 2; word-spacing: 0px; -webkit-text-stroke-width: 0px; white-space: normal; text-decoration-thickness: initial; text-decoration-style: initial; text-decoration-color: initial; float: none; display: inline !important;&quot;&gt;v-&amp;nbsp;&lt;/span&gt;" style="text;whiteSpace=wrap;html=1;labelBackgroundColor=none;fontSize=50;" vertex="1" parent="1">
+                    <mxGeometry x="164.75" y="325.25" width="64.5" height="67.5" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>
