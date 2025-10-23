@@ -28,6 +28,8 @@ models
 !.devcontainer
 !.devcontainer/devcontainer.json
 !.vscode/*.json
+!.github
+!.github/**
 !package*.json
 !**/quotes.json
 !**/tsconfig.json
