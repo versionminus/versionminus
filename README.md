@@ -1,6 +1,10 @@
-# licodex
+# versionminus
 
----
+Welcome to `versionminus`. We're committed to assist you with becoming the best version of yourself by learning from your past behaviour and providing AI assisted decision making.
+
+# Contributing
+
+We're delighted that you decided to contribute to the project.
 
 ## about
 
@@ -114,6 +118,60 @@
   </success-criteria>
 </human-core-identity>
 ```
+
+## gh-pages
+
+This repository serves a static site via GitHub Pages at `https://versionminus.com`.
+
+Included files
+- `index.html` – org‑style landing page (adds canonical and www→apex redirect).
+- `404.html` – not‑found page.
+- `CNAME` – contains `versionminus.com`.
+
+Publish steps
+1. Push site files to `gh-pahes`.
+2. GitHub → Settings → Pages → Source: Deploy from a branch → `gh-pahes` / `(root)`.
+3. Set Custom domain to `versionminus.com` and wait for TLS.
+4. Enable `Enforce HTTPS`
+
+DNS (GoDaddy)
+- Apex `@` → A records: 185.199.108.153, .109.153, .110.153, .111.153
+- `www` → CNAME: `versionminus.github.io`
+- Remove URL forwarding and conflicting A/AAAA/CNAME records.
+
+Verify
+- `dig +short versionminus.com A` → four 185.199.* IPs
+- `dig +short www.versionminus.com CNAME` → `versionminus.github.io.`
+- Pages Settings shows `DNS check successful` and HTTPS enabled.
+
+## TLS/HTTPS (How it works)
+
+High‑level flow
+
+```
+ Browser              DNS                 GitHub Pages              Let's Encrypt (CA)
+   |                   |                           |                           |
+   | 1) GET https://versionminus.com               |                           |
+   |---------------------------------------------->|                           |
+   |                   | 2) Resolve A/CNAME        |                           |
+   |<------------------| (185.199.* / github.io)   |                           |
+   |                   |                           | 3) Present certificate    |
+   |                   |                           |<--------------------------|
+   | 4) TLS handshake (verify cert + encrypt)      |                           |
+   |<--------------------------------------------->|                           |
+   | 5) Encrypted HTTP (serve your index.html)     |                           |
+   |<--------------------------------------------->|                           |
+```
+
+Key points
+- GitHub requests and auto‑renews a TLS cert for `versionminus.com` using `Let’s Encrypt` once DNS is correct.
+- The cert proves your site’s identity and enables encrypted HTTPS.
+- After issuance, enable `Enforce HTTPS` so all traffic is redirected to the secure URL.
+
+Checklist to keep HTTPS healthy
+- Keep `CNAME` file with `versionminus.com` in the repo root.
+- Ensure A records for `@` point to GitHub Pages IPs and `www` CNAME points to `versionminus.github.io` (or your org/user).
+- Avoid conflicting A/AAAA/CNAME or forwarding at the registrar.
 
 ## Contributors Quickstart
 
