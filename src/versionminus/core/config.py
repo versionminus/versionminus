@@ -200,10 +200,6 @@ class Settings(BaseSettings):
         description="Enable OIDC bearer token verification (Auth0). When false, all routes are unauthenticated."
     )
     # ⚠️ switch to True when running locally (.env or runtime)
-    auth_testing_mode: bool = Field(
-        default=False,
-        validation_alias=AliasChoices("AUTH_TESTING_MODE"),
-        description="If true, middleware will bypass token signature verification when missing and inject dummy claims for tests.")
     auth0_domain: Optional[str] = Field(
         default=None,
         validation_alias=AliasChoices("AUTH_DOMAIN"),
