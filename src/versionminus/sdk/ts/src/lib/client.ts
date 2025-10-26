@@ -81,6 +81,14 @@ export class versionminusClient {
     else delete this.axios.defaults.headers.Authorization;
   }
 
+  hasApiKey(): boolean {
+    return Boolean(this.config.apiKey);
+  }
+
+  getApiKey(): string | undefined {
+    return this.config.apiKey;
+  }
+
   // Users --------------------------------------------------------------------
   async listUsers(): Promise<User[]> {
     const { data } = await this.axios.get(`${API_PREFIX}/users/`);
@@ -99,6 +107,11 @@ export class versionminusClient {
 
   async createUser(input: UserCreate): Promise<User> {
     const { data } = await this.axios.post(`${API_PREFIX}/users/`, input);
+    return data;
+  }
+
+  async getCurrentUser(): Promise<User> {
+    const { data } = await this.axios.get(`${API_PREFIX}/users/me`);
     return data;
   }
 

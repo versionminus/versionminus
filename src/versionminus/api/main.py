@@ -40,12 +40,21 @@ if settings.auth_enabled:
         "/",  # root
         f"{settings.api_prefix}/health/liveness",
         f"{settings.api_prefix}/health/readiness",
+        app.openapi_url,
     }
+    EXEMPT_PATHS = {p for p in EXEMPT_PATHS if isinstance(p, str)}
+    EXEMPT_PREFIXES = (
+        "/docs",
+        "/redoc",
+    )
 
     @app.middleware("http")
     async def auth_middleware(request: Request, call_next):
+        if request.method == "OPTIONS":  # allow CORS preflight without auth
+            return await call_next(request)
         # Allow exempt paths
-        if request.url.path in EXEMPT_PATHS:
+        path = request.url.path
+        if path in EXEMPT_PATHS or any(path.startswith(prefix) for prefix in EXEMPT_PREFIXES):
             return await call_next(request)
         auth = request.headers.get("Authorization")
         if (not auth or not auth.startswith("Bearer ")) and settings.auth_testing_mode:

@@ -259,6 +259,14 @@ Checklist to keep HTTPS healthy
   - MCP: `CHUNK_POLICY_MCP_*`
   - Auth: `AUTH_*`
 
+## Authentication
+
+- Populate the `AUTH_*` entries in `.env` with your Auth0 tenant values (`AUTH_ENABLED`, `AUTH_DOMAIN`, `AUTH_API_AUDIENCE`, etc.) and restart the API to pick them up.
+- Provide the SPA variables (`VITE_AUTH0_*`, `VITE_API_BASE`) to the React app so it can talk to Auth0 and the API.
+- Step-by-step guidance for configuring Auth0, the SDK, and CLI access lives in `docs/auth0.md`.
+- The web client now logs in with Auth0 automatically and feeds the access token to `useversionminus({ token })`. `GET /api/v1/users/me` returns the local user associated with the token.
+- Scripts and curl callers can use the Auth0 client credentials flow; send requests with `Authorization: Bearer <token>`.
+
 ## Troubleshooting
 
 - Network missing: `docker network create versionminus`

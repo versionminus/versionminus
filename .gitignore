@@ -12,6 +12,7 @@
 tests/test.db
 models
 **/*.png
+**/*.jpeg
 
 # DevContainer entries
 .cache/
@@ -29,6 +30,7 @@ models
 !.devcontainer
 !.devcontainer/devcontainer.json
 !.vscode/*.json
+!**/logo.jpeg
 !package*.json
 !**/quotes.json
 !**/tsconfig.json

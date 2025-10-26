@@ -1,6 +1,7 @@
-import React, { useCallback, useState } from 'react';
-import { useversionminus, DEFAULT_USER_ID } from '@versionminus/sdk';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useversionminus } from '@versionminus/sdk';
 import type { Note } from '@versionminus/sdk';
+import { useAuth0 } from '@auth0/auth0-react';
 import { ChatPanel } from '../components/ChatPanel';
 import { NotesPanel } from '../components/NotesPanel';
 import { NotesEditor } from '../components/NotesEditor';
@@ -12,7 +13,24 @@ export function App() {
   // Allow overriding API base via Vite env variable. Use relative /api (proxied in dev,
   // nginx in prod) so the browser stays same-origin.
   const apiBase = import.meta.env.VITE_API_BASE || '/api';
-  const versionminus = useversionminus({ baseUrl: apiBase });
+  const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
+
+  const {
+    isLoading: authLoading,
+    isAuthenticated,
+    loginWithRedirect,
+    getAccessTokenSilently,
+    user: authUser,
+    error: authError,
+    logout,
+  } = useAuth0();
+
+  const [token, setToken] = useState<string>();
+  const [tokenError, setTokenError] = useState<string | undefined>();
+  const [autoLoginEnabled, setAutoLoginEnabled] = useState(true);
+  const loginInitiatedRef = useRef(false);
+
+  const versionminus = useversionminus({ baseUrl: apiBase, token });
 
   const [selectedNote, setSelectedNote] = useState<Note | null>(null); // Note selected in list / being edited
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
@@ -22,19 +40,52 @@ export function App() {
   const [selectedNoteIdsForContext, setSelectedNoteIdsForContext] = useState<string[]>([]);
   const [notesFullscreen, setNotesFullscreen] = useState(false);
 
-  // Do NOT auto-select a note; we want initial quotes view if nothing chosen.
-  // If you still want earliest note auto selection, re-enable below.
-  // useEffect(() => {
-  //   if (!selectedNote && versionminus.notes.data?.length) {
-  //     setSelectedNote(versionminus.notes.data[0]);
-  //   }
-  // }, [versionminus.notes.data, selectedNote]);
+  const requestToken = useCallback(async () => {
+    try {
+      const tokenResult = await getAccessTokenSilently(
+        audience ? { authorizationParams: { audience } } : undefined
+      );
+      setToken(tokenResult);
+      setTokenError(undefined);
+    } catch (err: any) {
+      const code = err?.error || err?.code;
+      if (code === 'login_required' || code === 'consent_required') {
+        loginInitiatedRef.current = false;
+        await loginWithRedirect();
+        return;
+      }
+      console.error('Failed to fetch access token', err);
+      setToken(undefined);
+      setTokenError(err?.message || 'Failed to acquire access token');
+    }
+  }, [audience, getAccessTokenSilently, loginWithRedirect]);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!isAuthenticated) {
+      setToken(undefined);
+      if (autoLoginEnabled && !loginInitiatedRef.current) {
+        loginInitiatedRef.current = true;
+        void loginWithRedirect();
+      }
+      return;
+    }
+    loginInitiatedRef.current = false;
+    setAutoLoginEnabled(true);
+    void requestToken();
+  }, [authLoading, isAuthenticated, autoLoginEnabled, loginWithRedirect, requestToken]);
+
+  const currentUserId = versionminus.currentUser?.id;
 
   const handleCreateNote = useCallback(async (content: string) => {
-    const note = await versionminus.createNote({ content, user_id: DEFAULT_USER_ID });
+    if (!currentUserId) {
+      console.warn('Cannot create note until user is loaded');
+      return undefined;
+    }
+    const note = await versionminus.createNote({ content, user_id: currentUserId });
     if (note) setSelectedNote(note);
     return note;
-  }, [versionminus]);
+  }, [currentUserId, versionminus]);
 
   const handleUpdateNote = useCallback(async (id: string, content: string) => {
     const note = await versionminus.updateNote(id, { content });
@@ -47,6 +98,81 @@ export function App() {
     if (selectedNote?.id === id) setSelectedNote(null);
   }, [versionminus, selectedNote]);
 
+  const handleLogin = useCallback(() => {
+    setAutoLoginEnabled(true);
+    loginInitiatedRef.current = true;
+    void loginWithRedirect();
+  }, [loginWithRedirect]);
+
+  const handleLogout = useCallback(() => {
+    setToken(undefined);
+    setAutoLoginEnabled(false);
+    loginInitiatedRef.current = false;
+    logout({ logoutParams: { returnTo: window.location.origin } });
+  }, [logout]);
+
+  if (authError) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>Authentication error: {authError.message}</p>
+        <button className="btn outline" onClick={handleLogin}>Retry login</button>
+      </div>
+    );
+  }
+
+  if (tokenError) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>{tokenError}</p>
+        <button className="btn outline" onClick={requestToken}>Try again</button>
+      </div>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>Signing you in…</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>{autoLoginEnabled ? 'Redirecting to sign in…' : 'You are signed out.'}</p>
+        {!autoLoginEnabled && (
+          <button className="btn outline" onClick={handleLogin}>Sign in</button>
+        )}
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>Preparing secure session…</p>
+      </div>
+    );
+  }
+
+  if (!versionminus.currentUser) {
+    return (
+      <div className="auth-screen">
+        <h1>versionminus</h1>
+        <p>Loading your workspace…</p>
+        <button className="btn outline" onClick={versionminus.refreshUser}>Retry</button>
+      </div>
+    );
+  }
+
+  const resolvedUserId = currentUserId!;
+
   return (
     <div className="layout-root flex-col-full">
       <SystemBar
@@ -55,6 +181,9 @@ export function App() {
         showNotes={showNotes}
         onToggleThreads={() => setShowThreads(s => !s)}
         onToggleNotes={() => setShowNotes(s => !s)}
+        onLogout={handleLogout}
+        userEmail={authUser?.email}
+        loadingUser={!versionminus.currentUser}
       />
       <div className="main-content">
         {showThreads && (
@@ -65,7 +194,10 @@ export function App() {
               error={versionminus.threads.error}
               selected={selectedThreadId}
               onSelect={t => { setSelectedThreadId(t.id); setNoteEditorOpen(false); setSelectedNote(null); void versionminus.loadMessages(t.id); }}
-              onCreate={async (title: string) => { const t = await versionminus.createThread({ title, user_id: DEFAULT_USER_ID }); if (t) { setSelectedThreadId(t.id); setSelectedNote(null); } }}
+              onCreate={async (title: string) => {
+                const t = await versionminus.createThread({ title, user_id: resolvedUserId });
+                if (t) { setSelectedThreadId(t.id); setSelectedNote(null); }
+              }}
               onRename={async (id: string, title: string) => { await versionminus.updateThread(id, { title, user_id: versionminus.threads.data?.find(t => t.id === id)?.user_id || '' }); }}
               onDelete={async (id: string) => { await versionminus.deleteThread(id); if (selectedThreadId === id) setSelectedThreadId(null); }}
             />

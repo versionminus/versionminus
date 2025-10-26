@@ -2,7 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createversionminusClient, versionminusClient } from '../client';
 import { versionminusConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, User, DEFAULT_USER_ID, Source } from '../types';
 
-interface UseversionminusOptions extends versionminusConfig {}
+interface UseversionminusOptions extends versionminusConfig {
+  token?: string;
+}
 
 interface AsyncState<T> {
   loading: boolean;
@@ -39,8 +41,9 @@ export interface UseversionminusReturn {
 }
 
 export function useversionminus(options: UseversionminusOptions): UseversionminusReturn {
+  const { token, ...clientOptions } = options;
   const clientRef = useRef<versionminusClient>();
-  if (!clientRef.current) clientRef.current = createversionminusClient(options);
+  if (!clientRef.current) clientRef.current = createversionminusClient(clientOptions);
   const client = clientRef.current;
 
   const [notes, setNotes] = useState<AsyncState<Note[]>>({ loading: false });
@@ -53,6 +56,10 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
   const [sourcesByGroup, setSourcesByGroup] = useState<Record<string, Source[]>>({});
 
   const loadNotes = useCallback(async () => {
+    if (!client.hasApiKey()) {
+      setNotes({ loading: false, data: [] });
+      return;
+    }
     setNotes((s: AsyncState<Note[]>) => ({ ...s, loading: true, error: undefined }));
     try {
       const data = await client.listNotes();
@@ -75,24 +82,32 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
     }
   }, [client]);
 
-  useEffect(() => {
-    void loadNotes();
-  }, [loadNotes]);
-
   // Load default user (best-effort; non-fatal)
   const loadUser = useCallback(async () => {
+    if (!client.hasApiKey()) {
+      setCurrentUser(undefined);
+      return;
+    }
     try {
-      const u = await client.getUserOrDefault(DEFAULT_USER_ID);
+      const u = await client.getCurrentUser();
       setCurrentUser(u);
-    } catch (e) { /* ignore */ }
+    } catch (e: any) {
+      if (e?.response?.status === 401) {
+        setCurrentUser(undefined);
+      } else {
+        console.error(e);
+      }
+    }
   }, [client]);
-
-  useEffect(() => { void loadUser(); }, [loadUser]);
 
   const createNote = useCallback(
     async (input: NoteInput) => {
       try {
-        const n = await client.createNote(input);
+        const payload = {
+          ...input,
+          user_id: input.user_id ?? currentUser?.id ?? DEFAULT_USER_ID,
+        };
+        const n = await client.createNote(payload);
         await loadNotes();
         // Initialize embedding state for new note if backend already flags it embedded
         if (n) {
@@ -103,11 +118,15 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
         console.error(e);
       }
     },
-    [client, loadNotes]
+    [client, currentUser, loadNotes]
   );
 
   // Threads
   const loadThreads = useCallback(async () => {
+    if (!client.hasApiKey()) {
+      setThreads({ loading: false, data: [] });
+      return;
+    }
     setThreads((s: AsyncState<Thread[]>) => ({ ...s, loading: true, error: undefined }));
     try {
       const data = await client.listThreads();
@@ -117,15 +136,17 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
     }
   }, [client]);
 
-  useEffect(() => { void loadThreads(); }, [loadThreads]);
-
   const createThread = useCallback(async (input: ThreadInput) => {
     try {
-      const t = await client.createThread(input);
+      const payload = {
+        ...input,
+        user_id: input.user_id ?? currentUser?.id ?? DEFAULT_USER_ID,
+      };
+      const t = await client.createThread(payload);
       await loadThreads();
       return t;
     } catch (e) { console.error(e); }
-  }, [client, loadThreads]);
+  }, [client, currentUser, loadThreads]);
 
   const updateThread = useCallback(async (id: string, input: Partial<ThreadInput>) => {
     try {
@@ -152,6 +173,10 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
 
   // Messages (per thread)
   const loadMessages = useCallback(async (threadId: string) => {
+    if (!client.hasApiKey()) {
+      setMessages({ loading: false, data: [] });
+      return;
+    }
     setMessages({ loading: true });
     try {
       const data = await client.listMessages(threadId);
@@ -193,6 +218,21 @@ export function useversionminus(options: UseversionminusOptions): Useversionminu
       return rows;
     } catch (e) { console.error(e); }
   }, [client, sourcesByGroup]);
+
+  useEffect(() => {
+    const activeToken = token ?? clientOptions.apiKey;
+    client.setApiKey(activeToken);
+    if (!activeToken) {
+      setCurrentUser(undefined);
+      setNotes({ loading: false, data: [] });
+      setThreads({ loading: false, data: [] });
+      setMessages({ loading: false, data: [] });
+      return;
+    }
+    void loadUser();
+    void loadNotes();
+    void loadThreads();
+  }, [client, token, clientOptions.apiKey, loadNotes, loadThreads, loadUser]);
 
   const updateNote = useCallback(
     async (id: string, input: Partial<NoteInput>) => {

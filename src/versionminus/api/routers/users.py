@@ -2,6 +2,7 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, status, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 from versionminus.api import deps
+from versionminus.models.user import User
 from versionminus.schemas.user import UserCreate, UserRead, UserEmailUpdate
 from versionminus.services.user import (
     create_user,
@@ -13,6 +14,12 @@ from versionminus.services.user import (
 )
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+@router.get("/me", response_model=UserRead, summary="Get current user")
+async def get_current_user_route(current_user: User | None = Depends(deps.get_current_user)):
+    if not current_user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
+    return current_user  # type: ignore
 
 @router.post("/", response_model=UserRead, status_code=status.HTTP_201_CREATED,
              summary="Create a user",
@@ -62,6 +69,4 @@ async def update_user_email_route(
         raise HTTPException(status_code=404, detail="User not found")
     except DuplicateEmailError:
         raise HTTPException(status_code=409, detail="Email already registered")
-
-
 
