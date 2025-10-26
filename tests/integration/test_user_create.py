@@ -1,5 +1,5 @@
 import pytest
-from licodex.schemas.user import UserCreate
+from versionminus.schemas.user import UserCreate
 
 @pytest.mark.asyncio
 @pytest.mark.integration

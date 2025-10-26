@@ -1,8 +1,8 @@
 import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from licodex.models.user import User
-from licodex.repositories import thread as thread_repo
+from versionminus.models.user import User
+from versionminus.repositories import thread as thread_repo
 
 @pytest.mark.asyncio
 @pytest.mark.unit

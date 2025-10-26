@@ -31,14 +31,14 @@ We're delighted that you decided to contribute to the project.
 
   <golden-paths>
     <fast-start>
-      docker network create licodex || true
+      docker network create versionminus || true
       cp -n .env.example .env || true
       docker compose up -d milvus-etcd milvus-minio milvus db otel-collector prometheus tempo loki fluent-bit grafana
       docker compose up -d mcp api web
       echo API: http://localhost:8000/health && echo Docs: http://localhost:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
     </fast-start>
     <api-only>
-      docker network create licodex || true
+      docker network create versionminus || true
       cp -n .env.example .env || true
       docker compose up -d db
       make run
@@ -81,7 +81,7 @@ We're delighted that you decided to contribute to the project.
   <state-audit>
     <containers>docker compose ps</containers>
     <health>curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health</health>
-    <db>docker exec licodex-db psql -U licodex -d licodex -c "select 1"</db>
+    <db>docker exec versionminus-db psql -U versionminus -d versionminus -c "select 1"</db>
     <observability>open Grafana at http://localhost:3000 and check data sources</observability>
   </state-audit>
 
@@ -96,13 +96,13 @@ We're delighted that you decided to contribute to the project.
 
   <first-tasks>
     <task>Verify an API router adheres to schema → router → service → repo → model, and add/adjust a unit test.</task>
-    <task>Improve an error path to use licodex.core.error with a clear message.</task>
+    <task>Improve an error path to use versionminus.core.error with a clear message.</task>
     <task>Small React component rename or prop typing fix in web client.</task>
   </first-tasks>
 
   <conventions>
     <python>Ruff for lint/format; Mypy for typing; Pytest markers: unit, integration, smoke.</python>
-    <errors>Prefer explicit domain errors (licodex.core.error) with meaningful messages.</errors>
+    <errors>Prefer explicit domain errors (versionminus.core.error) with meaningful messages.</errors>
     <persistence>Favor soft deletes; consider GC for soft-deleted items.</persistence>
     <observability>Log JSON to stdout; traces/metrics via OTEL; inspect in Grafana/Loki/Tempo.</observability>
     <api>FastAPI; keep endpoints thin; business logic in services; repositories abstract IO.</api>
@@ -179,7 +179,7 @@ Checklist to keep HTTPS healthy
   - Docker and Docker Compose
 
 - One‑time setup
-  - Create the shared docker network: `docker network create licodex`
+  - Create the shared docker network: `docker network create versionminus`
   - Copy env: `cp .env.example .env` and set required values
     - `MODELHUB_API_KEY`, `MODELHUB_BASE_URL`, `MODELHUB`
     - `AUTH_*` variables
@@ -195,7 +195,7 @@ Checklist to keep HTTPS healthy
 
 - Start Web UI (choose one)
   - Docker (static build): `docker compose up -d web` → `http://localhost:5173`
-  - Dev server: `cd src/licodex/client/web && npm install && npm run dev`
+  - Dev server: `cd src/versionminus/client/web && npm install && npm run dev`
 
 - First data smoke tests (optional)
   - Populate threads/messages: `make smoke-populate clean_before=1`
@@ -203,21 +203,21 @@ Checklist to keep HTTPS healthy
 
 ## Project Layout
 
-- API: `src/licodex/api` (FastAPI app, Dockerfile)
-- Domain models: `src/licodex/models`
-- Repositories: `src/licodex/repositories`
-- Services: `src/licodex/services`
-- Schemas: `src/licodex/schemas`
-- Vector DB (Milvus) assets: `src/licodex/milvus`
-- Observability: `src/licodex/observability/{otel-collector,loki,tempo,prometheus}`
-- SDKs: `src/licodex/sdk/{python,ts}`
-- Clients: `src/licodex/client/{web,cli,chatgpt}`
-- DB image + migrations: `src/licodex/db` (alembic in `src/licodex/alembic`)
+- API: `src/versionminus/api` (FastAPI app, Dockerfile)
+- Domain models: `src/versionminus/models`
+- Repositories: `src/versionminus/repositories`
+- Services: `src/versionminus/services`
+- Schemas: `src/versionminus/schemas`
+- Vector DB (Milvus) assets: `src/versionminus/milvus`
+- Observability: `src/versionminus/observability/{otel-collector,loki,tempo,prometheus}`
+- SDKs: `src/versionminus/sdk/{python,ts}`
+- Clients: `src/versionminus/client/{web,cli,chatgpt}`
+- DB image + migrations: `src/versionminus/db` (alembic in `src/versionminus/alembic`)
 
 ## Common Workflows
 
 - Run everything
-  - `docker compose up -d` (ensure `docker network create licodex` ran once)
+  - `docker compose up -d` (ensure `docker network create versionminus` ran once)
 
 - Rebuild images
   - All: `make build`
@@ -230,8 +230,8 @@ Checklist to keep HTTPS healthy
   - Run: `make run` → `http://localhost:8000`
 
 - Frontend development
-  - SDK build: `cd src/licodex/sdk/ts && npm install && npm run build`
-  - Web: `cd src/licodex/client/web && npm install && npm run dev`
+  - SDK build: `cd src/versionminus/sdk/ts && npm install && npm run build`
+  - Web: `cd src/versionminus/client/web && npm install && npm run dev`
 
 - Quality gates
   - Lint: `make lint`
@@ -241,7 +241,7 @@ Checklist to keep HTTPS healthy
 
 - Database
   - DB container runs migrations automatically on start
-  - Connect: `docker exec -it licodex-db psql -U licodex -d licodex`
+  - Connect: `docker exec -it versionminus-db psql -U versionminus -d versionminus`
 
 - Observability
   - Grafana: `http://localhost:3000` (admin/admin)
@@ -261,7 +261,7 @@ Checklist to keep HTTPS healthy
 
 ## Troubleshooting
 
-- Network missing: `docker network create licodex`
+- Network missing: `docker network create versionminus`
 - Loki exits: restart with `docker compose up -d loki` (known local issue)
 - Milvus not ready: ensure `milvus-etcd` and `milvus-minio` are healthy; then `docker compose up -d milvus`
 - Ports busy: stop conflicting services or change published ports in `compose.yml`
@@ -276,7 +276,7 @@ Checklist to keep HTTPS healthy
 - Open PR with clear title: `make pr title="feat: concise description"`
 
 
-`licodex` allows users to create, manage, and search notes using natural language processing and AI capabilities.
+`versionminus` allows users to create, manage, and search notes using natural language processing and AI capabilities.
 
 ## TODOs
 
@@ -305,8 +305,8 @@ Checklist to keep HTTPS healthy
     - *"create a new note"* (`MFA`)
   - I want to be able to ask questions about the application:
     - *"how many notes can I create?"*
-    - *"what is licodex?"*
-    - *"who built licodex?"*
+    - *"what is versionminus?"*
+    - *"who built versionminus?"*
   -  I want to be able to ask questions about the system (will depend on my permissions):
     - *"what is the current load on the system?"*
     - *"how many users are currently online?"*
@@ -316,13 +316,13 @@ Checklist to keep HTTPS healthy
 - expand to manage apple and google calendars (notes have tags like `nature in [chore, ...]`, `latest`, `earliest`, `delayed`, `criticality`, ...)
 - expand to report on financial transactions (OpenBank) and detect patters of behaviour
 - publish the SDK, docker compose build web should install the SDK, not copy it
-- meaningful errors, e.g.: no user found on new note creation (`licodex.core.error`)
+- meaningful errors, e.g.: no user found on new note creation (`versionminus.core.error`)
 - verify that all router methods follow the pattern: schema -> router -> service -> repo -> model
 - implement soft deletes in all models
 - implement garbage collector for soft deleted items
-- finish milvus setup: siphonn.utils -> licodex.core.config (get ConfigStore values)
+- finish milvus setup: siphonn.utils -> versionminus.core.config (get ConfigStore values)
 - nginx for CORS
-- verify if we can remove licodex.core.milvus
+- verify if we can remove versionminus.core.milvus
 - (embeddings router) verify different ordering of payload arrays: Silent misalignment of data. Always derive order from `coll.schema.fields`
 - robustness and performance
 - retrieval
@@ -346,70 +346,70 @@ Checklist to keep HTTPS healthy
 
 ## docker compose
 
-The solution is orchestrated by the following containers (the containers run locally in the docker network `licodex` and remotely in the K8s network)
+The solution is orchestrated by the following containers (the containers run locally in the docker network `versionminus` and remotely in the K8s network)
 
 ```sh
-licodex-web               # react client (see licodex.sdk.ts)
-licodex-api               # REST API
-licodex-mcp               # MCP tools
-licodex-db                # postgres for context & user data (see licodex.models)
-licodex-milvus            # embed: vector database
-licodex-milvus-minio      # embed: object storage
-licodex-milvus-etcd       # embed: metadata KV
-licodex-grafana           # obs: query, dashboard
-licodex-loki              # obs: logs
-licodex-fluent-bit        # obs: logs
-licodex-prometheus        # obs: metrics
-licodex-tempo             # obs: traces
-licodex-otel-collector    # obs: telemetry
+versionminus-web               # react client (see versionminus.sdk.ts)
+versionminus-api               # REST API
+versionminus-mcp               # MCP tools
+versionminus-db                # postgres for context & user data (see versionminus.models)
+versionminus-milvus            # embed: vector database
+versionminus-milvus-minio      # embed: object storage
+versionminus-milvus-etcd       # embed: metadata KV
+versionminus-grafana           # obs: query, dashboard
+versionminus-loki              # obs: logs
+versionminus-fluent-bit        # obs: logs
+versionminus-prometheus        # obs: metrics
+versionminus-tempo             # obs: traces
+versionminus-otel-collector    # obs: telemetry
 ```
 
 Flow diagram
 
 ```sh
-licodex-web
+versionminus-web
 |
 | HTTPS/REST + SDK
 v
-licodex-api
-|---> licodex-db
-|---> licodex-milvus
-|     |---> licodex-milvus-minio
-|     |---> licodex-milvus-etcd
+versionminus-api
+|---> versionminus-db
+|---> versionminus-milvus
+|     |---> versionminus-milvus-minio
+|     |---> versionminus-milvus-etcd
 |
-|---> licodex-mcp
+|---> versionminus-mcp
 |
-|---> licodex-otel-collector
-|      |----> licodex-tempo
-|      |----> licodex-prometheus
+|---> versionminus-otel-collector
+|      |----> versionminus-tempo
+|      |----> versionminus-prometheus
 |
 | Logs (stdout JSON)
 v
-licodex-fluent-bit
+versionminus-fluent-bit
 |
 | push
 |
 v
-licodex-loki
+versionminus-loki
 
-licodex-grafana
-|---> licodex-prometheus
-|---> licodex-loki
-|---> licodex-tempo
+versionminus-grafana
+|---> versionminus-prometheus
+|---> versionminus-loki
+|---> versionminus-tempo
 ```
 
 ## Devcontainer
 
 ```sh
-docker network create licodex
+docker network create versionminus
 
 # authn to ghcr (prerequisite: create gh token (classic) with read:packages and write:packages scopes)
 echo GITHUB_TOKEN | docker login ghcr.io -u $USER --password-stdin
 
 # Build devcontainer images
-docker network create licodex # such that the containers can communicate
-docker build -f .devcontainer/docker/Dockerfile.base -t ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0 . # first setup only
-docker build -f .devcontainer/docker/Dockerfile.tools -t ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0 . # first setup only
+docker network create versionminus # such that the containers can communicate
+docker build -f .devcontainer/docker/Dockerfile.base -t ghcr.io/diogobaltazar/versionminus-devcontainer-base:1.0.0 . # first setup only
+docker build -f .devcontainer/docker/Dockerfile.tools -t ghcr.io/diogobaltazar/versionminus-devcontainer-tools:1.0.0 . # first setup only
 USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 # attach to the devcontainer with vscode
 ```
@@ -428,7 +428,7 @@ pip install -r .devcontainer/python-requirements.txt
 
 ```sh
 # typescript dependencies
-cd src/licodex/sdk/ts && npm install
+cd src/versionminus/sdk/ts && npm install
 cd ../../client/web && npm install
 cd ../../../..
 ```
@@ -450,18 +450,18 @@ docker compose up -d --force-recreate api
 
 ```sh
 # frontend
-cd src/licodex/client/web && npm run dev
+cd src/versionminus/client/web && npm run dev
 ```
 ### Debugging
 
 Useful commands for debugging
 
 ```sh
-docker exec licodex-db psql -U licodex -d licodex -c "select * from message"
-docker exec licodex-db psql -U licodex -d licodex -c "select * from note"
-docker exec licodex-db psql -U licodex -d licodex -c "select * from user"
-docker exec licodex-db psql -U licodex -d licodex -c "select * from source"
-docker exec licodex-db psql -U licodex -d licodex -c "select * from thread"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from message"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from note"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from user"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from source"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from thread"
 ```
 
 ## Chunk policy detection & MCP integration
@@ -505,7 +505,7 @@ CHUNK_POLICY_MCP_HOST=mcp
 CHUNK_POLICY_MCP_PORT=8080
 ```
 
-When MCP is disabled, heuristics still provide reasonable defaults (code blocks → `code_blocks`, short notes → `minimal_words`, etc.). Extend `src/licodex/mcp/main.py` to experiment with richer detectors or additional tools.
+When MCP is disabled, heuristics still provide reasonable defaults (code blocks → `code_blocks`, short notes → `minimal_words`, etc.). Extend `src/versionminus/mcp/main.py` to experiment with richer detectors or additional tools.
 
 
 ```sh
@@ -558,7 +558,7 @@ curl https://api.openai.com/v1/responses \
       "content": [
         {
           "type": "input_text",
-          "text": "What is licodex about?"
+          "text": "What is versionminus about?"
         }
       ]
     }

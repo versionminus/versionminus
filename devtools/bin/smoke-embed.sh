@@ -103,7 +103,7 @@ cleanup_user_and_notes() {
     log "Skip cleanup: list users failed"; return 0
   fi
   # Extract first user whose email contains token
-  user_id=$(sed -n "s/.*{\\\"id\\\":\\\"\\([^\\\"]*\\)\\\",\\\"email\\\":\\\"embed-${token}@licodex.com\\\".*/\\1/p" <<<"$users_json" | head -n1 || true)
+  user_id=$(sed -n "s/.*{\\\"id\\\":\\\"\\([^\\\"]*\\)\\\",\\\"email\\\":\\\"embed-${token}@versionminus.com\\\".*/\\1/p" <<<"$users_json" | head -n1 || true)
   if [[ -z "$user_id" ]]; then
     # fallback: any email containing token
     user_id=$(sed -n "s/.*{\\\"id\\\":\\\"\\([^\\\"]*\\)\\\",\\\"email\\\":\\\"[^\\\"]*${token}[^\\\"]*\\\".*/\\1/p" <<<"$users_json" | head -n1 || true)
@@ -156,7 +156,7 @@ timestamp=$(date +%s%N)
 # NOTE: The cleanup_user_and_notes previously looked for pattern embed-<token>@, but we
 # actually used a static email causing --clean-before to be ineffective and leading to 409.
 # We now (best-effort) delete the static/default email if present when CLEAN_BEFORE=1.
-email="${SMOKE_EMBED_EMAIL:-charlotte@licodex.com}"
+email="${SMOKE_EMBED_EMAIL:-charlotte@versionminus.com}"
 
 delete_user_by_email() {
   local target_email="$1"

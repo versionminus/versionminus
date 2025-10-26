@@ -11,16 +11,16 @@ from typing import AsyncGenerator
 test_db_url = os.environ.get("TEST_DATABASE_URL", "sqlite+aiosqlite:///./tests/test.db")
 os.environ.setdefault("DATABASE_URL", test_db_url)
 
-from licodex.core import config as _config  # noqa: E402
+from versionminus.core import config as _config  # noqa: E402
 _config.get_settings.cache_clear()  # ensure new env vars are picked up # type: ignore[attr-defined]
 _settings = _config.get_settings()
 
-from licodex.api.main import app  # noqa: E402
-from licodex.db.session import AsyncSessionLocal, engine, Base  # noqa: E402
-from licodex.models.user import User  # noqa: E402
-from licodex.models.thread import Thread  # noqa: E402
-from licodex.models.message import Message  # noqa: E402
-from licodex.models.note import Note  # noqa: E402
+from versionminus.api.main import app  # noqa: E402
+from versionminus.db.session import AsyncSessionLocal, engine, Base  # noqa: E402
+from versionminus.models.user import User  # noqa: E402
+from versionminus.models.thread import Thread  # noqa: E402
+from versionminus.models.message import Message  # noqa: E402
+from versionminus.models.note import Note  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 
 @pytest_asyncio.fixture(autouse=True, scope="session")

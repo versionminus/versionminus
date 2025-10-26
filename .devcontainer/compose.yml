@@ -1,5 +1,5 @@
 # create the network before building the devcontainer
-# docker network create licodex
+# docker network create versionminus
 #
 # build base, tools and devcontainer images (don't pull, they don't exist on first run)
 # USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
@@ -11,14 +11,14 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.base
-    image: ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0
+    image: ghcr.io/diogobaltazar/versionminus-devcontainer-base:1.0.0
 
   # Tools image with Docker, Node.js, and CDK
   tools:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.tools
-    image: ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0
+    image: ghcr.io/diogobaltazar/versionminus-devcontainer-tools:1.0.0
     depends_on:
       - base
 
@@ -30,7 +30,7 @@ services:
       args:
         USRID: ${USRID}
         USRNAME: ${USRNAME}
-    image: ghcr.io/diogobaltazar/licodex-devcontainer:1.0.0
-    container_name: licodex-devcontainer
+    image: ghcr.io/diogobaltazar/versionminus-devcontainer:1.0.0
+    container_name: versionminus-devcontainer
     depends_on:
       - tools

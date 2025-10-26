@@ -24,7 +24,7 @@ models
 .vscode-server/
 .bash_history
 # Exceptions
-!src/licodex/milvus/collection/config/notes.json
+!src/versionminus/milvus/collection/config/notes.json
 !.vscode
 !.devcontainer
 !.devcontainer/devcontainer.json
