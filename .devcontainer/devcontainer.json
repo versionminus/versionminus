@@ -39,6 +39,7 @@
 		}
 	},
 	"features": {
+		"ghcr.io/devcontainers/features/common-utils:2": { "installZsh": false },
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/devcontainers/features/aws-cli:1": {}
 	},
@@ -47,5 +48,5 @@
     "source=${localEnv:HOME}/.ssh,target=/home/${localEnv:USER}/.ssh,type=bind"
   ],
   "postCreateCommand": "python3 -m pip install --upgrade --user pip setuptools wheel && python3 -m pip install --user -e '.[utils,test]'",
-  "postStartCommand": "sudo chown ${localEnv:USER}:docker /var/run/docker.sock && sudo chmod 660 /var/run/docker.sock && gh extension install https://github.com/nektos/gh-act && ./.github/bin/setup-git-hooks.sh && ./.github/bin/start-github-runner.sh"
+  "postStartCommand": "sudo chown ${localEnv:USER}:docker /var/run/docker.sock && sudo chmod 660 /var/run/docker.sock"
 }
