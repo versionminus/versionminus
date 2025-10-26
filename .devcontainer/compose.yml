@@ -2,6 +2,8 @@
 # docker network create versionminus
 #
 # build base, tools and devcontainer images (don't pull, they don't exist on first run)
+# docker compose -f .devcontainer/compose.yml build base
+# docker compose -f .devcontainer/compose.yml build tools
 # USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 #
 # >Dev Containers: Reopen in Container
@@ -11,14 +13,14 @@ services:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.base
-    image: ghcr.io/diogobaltazar/versionminus-devcontainer-base:1.0.0
+    image: ghcr.io/versionminus/versionminus-devcontainer-base:1.0.0
 
   # Tools image with Docker, Node.js, and CDK
   tools:
     build:
       context: ..
       dockerfile: .devcontainer/docker/Dockerfile.tools
-    image: ghcr.io/diogobaltazar/versionminus-devcontainer-tools:1.0.0
+    image: ghcr.io/versionminus/versionminus-devcontainer-tools:1.0.0
     depends_on:
       - base
 
@@ -30,7 +32,7 @@ services:
       args:
         USRID: ${USRID}
         USRNAME: ${USRNAME}
-    image: ghcr.io/diogobaltazar/versionminus-devcontainer:1.0.0
+    image: ghcr.io/versionminus/versionminus-devcontainer:1.0.0
     container_name: versionminus-devcontainer
     depends_on:
       - tools

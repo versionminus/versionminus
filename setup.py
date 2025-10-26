@@ -76,6 +76,12 @@ setup(
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
     install_requires=list(parse_requirements('src/versionminus/python-requirements.txt')),
+    extras_require={
+        # Developer utilities; keep minimal here since base image may include tools already
+        'utils': [],
+        # Testing dependencies pulled from tests/python-requirements.txt
+        'test': list(parse_requirements('tests/python-requirements.txt')),
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

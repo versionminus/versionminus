@@ -416,8 +416,8 @@ echo GITHUB_TOKEN | docker login ghcr.io -u $USER --password-stdin
 
 # Build devcontainer images
 docker network create versionminus # such that the containers can communicate
-docker build -f .devcontainer/docker/Dockerfile.base -t ghcr.io/diogobaltazar/versionminus-devcontainer-base:1.0.0 . # first setup only
-docker build -f .devcontainer/docker/Dockerfile.tools -t ghcr.io/diogobaltazar/versionminus-devcontainer-tools:1.0.0 . # first setup only
+docker build -f .devcontainer/docker/Dockerfile.base -t ghcr.io/versionminus/versionminus-devcontainer-base:1.0.0 . # first setup only
+docker build -f .devcontainer/docker/Dockerfile.tools -t ghcr.io/versionminus/versionminus-devcontainer-tools:1.0.0 . # first setup only
 USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 # attach to the devcontainer with vscode
 ```

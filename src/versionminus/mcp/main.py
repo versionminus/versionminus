@@ -9,7 +9,7 @@ import logging
 import os
 from typing import Dict, List, Any
 
-from fastmcp import FastMCP
+from mcp.server.fastmcp import FastMCP
 from openai import OpenAI
 
 # Configure logging

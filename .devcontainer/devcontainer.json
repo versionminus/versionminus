@@ -1,5 +1,8 @@
 {
+	"image": "ghcr.io/versionminus/versionminus-devcontainer:1.0.0",
 	"runArgs": [
+		"--name",
+		"versionminus-devcontainer",
 		"--rm",
 		"--network",
 		"versionminus"
@@ -28,7 +31,7 @@
 				"redhat.vscode-yaml",
 				"davidanson.vscode-markdownlint",
 				"timonwong.shellcheck",
-				"wraith13.background-phi-colors"
+				"openai.chatgpt"
 			],
 			"settings": {
 				"python.pythonPath": "/usr/local/bin/python"

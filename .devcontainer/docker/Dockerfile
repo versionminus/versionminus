@@ -1,5 +1,5 @@
 # Development environment
-FROM ghcr.io/diogobaltazar/versionminus-devcontainer-tools:1.0.0
+FROM ghcr.io/versionminus/versionminus-devcontainer-tools:1.0.0
 
 LABEL version="1.0.0"
 
@@ -27,7 +27,7 @@ RUN useradd --uid $USRID --create-home -s /bin/bash $USRNAME \
 RUN apt update \
     && apt install -y --no-install-recommends \
     python3 python3-pip python3-venv python3-dev \
-    build-essential git \
+    build-essential git ninja-build \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -42,7 +42,6 @@ ENV PYTHONUNBUFFERED=1 \
 COPY src/versionminus/core/python-requirements.txt /tmp/requirements/core.txt
 COPY src/versionminus/api/python-requirements.txt /tmp/requirements/api.txt
 COPY src/versionminus/db/python-requirements.txt /tmp/requirements/pg.txt
-COPY src/versionminus/models/python-requirements.txt /tmp/requirements/model.txt
 COPY src/versionminus/alembic/python-requirements.txt /tmp/requirements/alembic.txt
 COPY src/versionminus/repositories/python-requirements.txt /tmp/requirements/repositories.txt
 COPY src/versionminus/schemas/python-requirements.txt /tmp/requirements/schemas.txt
