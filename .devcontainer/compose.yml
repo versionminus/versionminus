@@ -7,6 +7,14 @@
 # USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml build --no-cache --pull=false
 #
 # >Dev Containers: Reopen in Container
+#
+# compose project name #########################################################
+#
+# Using devcontainer, the project opens under your user name, which is what compose
+# takes as the project name. This can cause issues with dependencies on other
+# containers.
+#
+name: versionminus
 services:
   # Base development image with system dependencies
   base:

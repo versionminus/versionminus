@@ -1,3 +1,10 @@
+# compose project name #########################################################
+#
+# Using devcontainer, the project opens under your user name, which is what compose
+# takes as the project name. This can cause issues with dependencies on other
+# containers.
+#
+name: versionminus
 services:
   # BACKEND ####################################################################
   milvus-etcd:
@@ -107,8 +114,8 @@ services:
       - MODELHUB_API_KEY
       - MODELHUB_BASE_URL
       - MODELHUB
-      - OTEL_SERVICE_NAME=versionminus-api
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=versionminus-otel-collector
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://versionminus-otel-collector:4318
       - OTEL_TRACES_SAMPLER=parentbased_always_on
       - OTEL_EXPORTER_OTLP_INSECURE=true
     env_file:
