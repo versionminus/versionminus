@@ -7,7 +7,6 @@ This document walks through wiring Auth0-issued access tokens to the `versionmin
 Populate the following keys in `.env` (or deployment secrets):
 
 - `AUTH_ENABLED`: set to `true` to require Auth0 tokens.
-- `AUTH_TESTING_MODE`: keep `false` so the API rejects unauthenticated traffic (flip only for automated tests or temporary local debugging).
 - `AUTH_DOMAIN`: your Auth0 tenant domain, e.g. `versionminus.eu.auth0.com`.
 - `AUTH_API_AUDIENCE`: the API Identifier you configured under Auth0 → APIs (often looks like `https://api.versionminus.com/`).
 - `AUTH_APPLICATION_CLIENT_ID`: client id of the confidential app that will request tokens (typically the machine-to-machine app).
@@ -101,7 +100,7 @@ curl http://localhost:8000/api/v1/notes/ \
 
 ## 5. Health checks and docs
 
-The liveness/readiness endpoints (`/api/v1/health/*`) stay unauthenticated so Kubernetes-style probes keep working. Swagger UI (`/docs`) and the OpenAPI schema (`/openapi.json`) remain publicly accessible for inspection; all other routes require a valid Auth0 bearer token unless `AUTH_TESTING_MODE=true`.
+The liveness/readiness endpoints (`/api/v1/health/*`) stay unauthenticated so Kubernetes-style probes keep working. Swagger UI (`/docs`) and the OpenAPI schema (`/openapi.json`) remain publicly accessible for inspection; all other routes require a valid Auth0 bearer token.
 
 ## 6. Quick reference
 
