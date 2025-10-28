@@ -1,5 +1,5 @@
 # Build tools image
-FROM ghcr.io/diogobaltazar/licodex-devcontainer-base:1.0.0
+FROM ghcr.io/versionminus/versionminus-devcontainer-base:1.0.0
 
 LABEL version="1.0.0"
 
@@ -20,3 +20,16 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && npm install -g aws-cdk@latest \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
+
+# Install uv
+RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install ngrok
+RUN curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+  | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc >/dev/null \
+  && echo "deb https://ngrok-agent.s3.amazonaws.com bookworm main" \
+  | sudo tee /etc/apt/sources.list.d/ngrok.list \
+  && sudo apt update \
+  && sudo apt install ngrok \
+  && apt clean \
+  && rm -rf /var/lib/apt/lists/*

@@ -1,7 +1,7 @@
 import uuid
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from licodex.repositories import user as user_repo
+from versionminus.repositories import user as user_repo
 
 @pytest.mark.asyncio
 @pytest.mark.unit

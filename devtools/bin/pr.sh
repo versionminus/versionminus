@@ -14,7 +14,7 @@ if [ -z "$PR_TITLE" ]; then
     exit 1
 fi
 
-PR_BODY=${PR_BODY:-"[licodex] Automated PR"}
+PR_BODY=${PR_BODY:-"[versionminus] Automated PR"}
 CURRENT_BRANCH=$(git branch --show-current)
 
 # Check if we're on dev branch

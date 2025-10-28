@@ -8,7 +8,7 @@
             "module": "uvicorn",
             "cwd": "${workspaceFolder}",
             "args": [
-                "licodex.api.main:app",
+                "versionminus.api.main:app",
                 "--host", "0.0.0.0",
                 "--port", "8000",
                 "--reload"
@@ -17,9 +17,9 @@
                 "LOG_LEVEL": "DEBUG",
                 "DB_HOST": "db",
                 "DB_PORT": "5432",
-                "DB_USER": "licodex",
-                "DB_PASSWORD": "licodexpwd",
-                "DB_NAME": "licodex"
+                "DB_USER": "versionminus",
+                "DB_PASSWORD": "versionminuspwd",
+                "DB_NAME": "versionminus"
             },
             "jinja": true,
             "justMyCode": true,

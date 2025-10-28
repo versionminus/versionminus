@@ -1,5 +1,5 @@
 # Development environment
-FROM ghcr.io/diogobaltazar/licodex-devcontainer-tools:1.0.0
+FROM ghcr.io/versionminus/versionminus-devcontainer-tools:1.0.0
 
 LABEL version="1.0.0"
 
@@ -27,7 +27,7 @@ RUN useradd --uid $USRID --create-home -s /bin/bash $USRNAME \
 RUN apt update \
     && apt install -y --no-install-recommends \
     python3 python3-pip python3-venv python3-dev \
-    build-essential git \
+    build-essential git ninja-build \
     && apt clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -39,14 +39,13 @@ ENV PYTHONUNBUFFERED=1 \
 ## Python dependencies (layer invalidates only when requirements change)
 ## We copy ONLY requirement files to maximize cache hits.
 ## ------------------------------------------------------------------
-COPY src/licodex/core/python-requirements.txt /tmp/requirements/core.txt
-COPY src/licodex/api/python-requirements.txt /tmp/requirements/api.txt
-COPY src/licodex/db/python-requirements.txt /tmp/requirements/pg.txt
-COPY src/licodex/models/python-requirements.txt /tmp/requirements/model.txt
-COPY src/licodex/alembic/python-requirements.txt /tmp/requirements/alembic.txt
-COPY src/licodex/repositories/python-requirements.txt /tmp/requirements/repositories.txt
-COPY src/licodex/schemas/python-requirements.txt /tmp/requirements/schemas.txt
-COPY src/licodex/services/python-requirements.txt /tmp/requirements/services.txt
+COPY src/versionminus/core/python-requirements.txt /tmp/requirements/core.txt
+COPY src/versionminus/api/python-requirements.txt /tmp/requirements/api.txt
+COPY src/versionminus/db/python-requirements.txt /tmp/requirements/pg.txt
+COPY src/versionminus/alembic/python-requirements.txt /tmp/requirements/alembic.txt
+COPY src/versionminus/repositories/python-requirements.txt /tmp/requirements/repositories.txt
+COPY src/versionminus/schemas/python-requirements.txt /tmp/requirements/schemas.txt
+COPY src/versionminus/services/python-requirements.txt /tmp/requirements/services.txt
 COPY tests/python-requirements.txt /tmp/requirements/tests.txt
 
 RUN set -eux; \

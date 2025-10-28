@@ -1,5 +1,6 @@
--r ../src/licodex/python-requirements.txt
+-r ../src/versionminus/python-requirements.txt
 -r ../tests/python-requirements.txt
 
 debugpy==1.8.1
+mypy==1.18.2
 huggingface-hub==0.35.3

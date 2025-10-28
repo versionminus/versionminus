@@ -15,7 +15,7 @@ def read_version():
         return "0.0.0"
 
 __version__ = read_version()
-__project__ = "licodex"
+__project__ = "versionminus"
 def get_contributors() -> List[str]:
     """Extract unique contributors from git history."""
     try:
@@ -71,10 +71,17 @@ setup(
     author=", ".join(__author__),  # Use authors as a single string for the author field
     long_description=long_description,
     long_description_content_type="text/markdown",
-    python_requires='>=3.8, <4',
+    # Project uses modern typing (PEP 585/604), requiring Python >= 3.10
+    python_requires='>=3.10, <4',
     package_dir={'': 'src'},
     packages=find_packages(where='src'),
-    install_requires=list(parse_requirements('src/licodex/python-requirements.txt')),
+    install_requires=list(parse_requirements('src/versionminus/python-requirements.txt')),
+    extras_require={
+        # Developer utilities; keep minimal here since base image may include tools already
+        'utils': [],
+        # Testing dependencies pulled from tests/python-requirements.txt
+        'test': list(parse_requirements('tests/python-requirements.txt')),
+    },
     classifiers=[
         'Development Status :: 4 - Beta',
         'Intended Audience :: Science/Research',

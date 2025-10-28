@@ -1,7 +1,14 @@
+# compose project name #########################################################
+#
+# Using devcontainer, the project opens under your user name, which is what compose
+# takes as the project name. This can cause issues with dependencies on other
+# containers.
+#
+name: versionminus
 services:
   # BACKEND ####################################################################
   milvus-etcd:
-    container_name: licodex-milvus-etcd
+    container_name: versionminus-milvus-etcd
     image: quay.io/coreos/etcd:v3.5.0
     environment:
       - ETCD_AUTO_COMPACTION_MODE=revision
@@ -9,7 +16,7 @@ services:
       - ETCD_QUOTA_BACKEND_BYTES=4294967296
       - ETCD_SNAPSHOT_COUNT=50000
     volumes:
-      - licodex-milvus-etcd:/etcd
+      - versionminus-milvus-etcd:/etcd
     # IMPORTANT: advertise a host reachable by other containers (NOT 127.0.0.1)
     # If we advertise 127.0.0.1 Milvus will follow redirects to its own loopback and fail.
     command: etcd -advertise-client-urls=http://milvus-etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
@@ -19,16 +26,16 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - licodex
+      - versionminus
 
   milvus-minio:
-    container_name: licodex-milvus-minio
+    container_name: versionminus-milvus-minio
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: minioadmin
     volumes:
-      - licodex-milvus-minio:/data
+      - versionminus-milvus-minio:/data
     command: minio server /data
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
@@ -36,14 +43,14 @@ services:
       timeout: 20s
       retries: 3
     networks:
-      - licodex
+      - versionminus
 
   milvus:
     build:
       context: .
-      dockerfile: src/licodex/milvus/Dockerfile
-    image: ghcr.io/diogobaltazar/licodex-milvus:1.0.0
-    container_name: licodex-milvus
+      dockerfile: src/versionminus/milvus/Dockerfile
+    image: ghcr.io/versionminus/versionminus-milvus:1.0.0
+    container_name: versionminus-milvus
     environment:
       # Use explicit service names (no network aliases required)
       # Service 'milvus-etcd' exposes client port 2379
@@ -52,7 +59,7 @@ services:
       MINIO_ADDRESS: milvus-minio:9000
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-}
     volumes:
-      - licodex-milvus:/var/lib/milvus
+      - versionminus-milvus:/var/lib/milvus
     ports:
       - "19530:19530" # grpc, http
       - "9091:9091" # monitoring
@@ -62,22 +69,22 @@ services:
       milvus-minio:
         condition: service_started
     networks:
-      - licodex
+      - versionminus
 
   db:
     build:
       context: .
-      dockerfile: src/licodex/db/Dockerfile
-    image: licodex-db:1.0.0
-    container_name: licodex-db
+      dockerfile: src/versionminus/db/Dockerfile
+    image: versionminus-db:1.0.0
+    container_name: versionminus-db
     restart: unless-stopped
     environment:
       # Postgres image consumes these; defaults also baked into Dockerfile but we keep explicit for clarity
-      POSTGRES_USER: licodex
-      POSTGRES_PASSWORD: licodexpwd
-      POSTGRES_DB: licodex
+      POSTGRES_USER: versionminus
+      POSTGRES_PASSWORD: versionminuspwd
+      POSTGRES_DB: versionminus
     volumes:
-      - licodex-db-data:/var/lib/postgresql/data
+      - versionminus-db-data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
@@ -85,14 +92,14 @@ services:
       retries: 10
     # IMPORTANT: place db on the same user-defined network as api so hostname 'db' resolves inside api container
     networks:
-      - licodex
+      - versionminus
 
   api:
     build:
       context: .
-      dockerfile: src/licodex/api/Dockerfile
-    image: licodex-api:1.0.0
-    container_name: licodex-api
+      dockerfile: src/versionminus/api/Dockerfile
+    image: versionminus-api:1.0.0
+    container_name: versionminus-api
     restart: unless-stopped
     depends_on:
       db:
@@ -107,52 +114,54 @@ services:
       - MODELHUB_API_KEY
       - MODELHUB_BASE_URL
       - MODELHUB
-      - OTEL_SERVICE_NAME=licodex-api
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_SERVICE_NAME=versionminus-otel-collector
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://versionminus-otel-collector:4318
       - OTEL_TRACES_SAMPLER=parentbased_always_on
       - OTEL_EXPORTER_OTLP_INSECURE=true
+    env_file:
+      - .env
     networks:
-      - licodex
+      - versionminus
 
   mcp:
     build:
       context: .
-      dockerfile: src/licodex/mcp/Dockerfile
-    image: licodex-mcp:1.0.0
-    container_name: licodex-mcp
+      dockerfile: src/versionminus/mcp/Dockerfile
+    image: versionminus-mcp:1.0.0
+    container_name: versionminus-mcp
     restart: unless-stopped
     environment:
       - CHUNK_POLICY_MODEL_PATH
     networks:
-      - licodex
+      - versionminus
 
   # FRONTEND ###################################################################
   web:
     build:
       context: .
-      dockerfile: src/licodex/client/web/Dockerfile
-    image: licodex-web:1.0.0
-    container_name: licodex-web
+      dockerfile: src/versionminus/client/web/Dockerfile
+    image: versionminus-web:1.0.0
+    container_name: versionminus-web
     restart: unless-stopped
     depends_on:
       - api
     ports:
       - "5173:80"
     networks:
-      - licodex
+      - versionminus
 
   # OBSERVABILITY ##############################################################
   loki:
     image: grafana/loki:2.9.4
-    container_name: licodex-loki
+    container_name: versionminus-loki
     command: -config.file=/etc/loki/config.yml
     volumes:
-      - ./src/licodex/observability/loki/config.yml:/etc/loki/config.yml:ro
-      - licodex-loki-data:/loki
+      - ./src/versionminus/observability/loki/config.yml:/etc/loki/config.yml:ro
+      - versionminus-loki-data:/loki
     ports:
       - "3100:3100"
     networks:
-      - licodex
+      - versionminus
 
   # Log forwarder/shipper
   #
@@ -160,18 +169,18 @@ services:
   # pushes logs into Loki for centralized search and retention.
   fluent-bit:
     image: fluent/fluent-bit:2.1.8
-    container_name: licodex-fluent-bit
+    container_name: versionminus-fluent-bit
     environment:
       DEPLOYMENT_ENV: ${DEPLOYMENT_ENV:-local}
     volumes:
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
-      - ./src/licodex/observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-      - ./src/licodex/observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - ./src/versionminus/observability/fluent-bit/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./src/versionminus/observability/fluent-bit/parsers.conf:/fluent-bit/etc/parsers.conf:ro
     depends_on:
       - loki
     networks:
-      - licodex
+      - versionminus
 
   # Distributed tracing backend
   #
@@ -179,15 +188,15 @@ services:
   # request spans/timelines in Grafana and correlate them with logs/metrics.
   tempo:
     image: grafana/tempo:2.2.2
-    container_name: licodex-tempo
+    container_name: versionminus-tempo
     command: -config.file=/etc/tempo/tempo.yml
     volumes:
-      - ./src/licodex/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
-      - licodex-tempo-data:/var/tempo
+      - ./src/versionminus/observability/tempo/tempo.yml:/etc/tempo/tempo.yml:ro
+      - versionminus-tempo-data:/var/tempo
     ports:
       - "3200:3200"
     networks:
-      - licodex
+      - versionminus
 
   # Vendor‑neutral telemetry router
   #
@@ -196,11 +205,11 @@ services:
   # its console for debugging).
   otel-collector:
     image: otel/opentelemetry-collector:0.93.0
-    container_name: licodex-otel-collector
+    container_name: versionminus-otel-collector
     command:
       - "--config=/etc/otelcol/config.yaml"
     volumes:
-      - ./src/licodex/observability/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - ./src/versionminus/observability/otel-collector:/etc/otelcol:ro
     ports:
       - "4317:4317"
       - "4318:4318"
@@ -208,7 +217,7 @@ services:
     depends_on:
       - tempo
     networks:
-      - licodex
+      - versionminus
 
   # Metrics collection and storage
   #
@@ -216,20 +225,20 @@ services:
   # and powers Grafana metric queries and alerting rules.
   prometheus:
     image: prom/prometheus:v2.48.0
-    container_name: licodex-prometheus
+    container_name: versionminus-prometheus
     command:
       - "--config.file=/etc/prometheus/prometheus.yml"
       - "--storage.tsdb.path=/prometheus"
       - "--web.enable-lifecycle"
     volumes:
-      - ./src/licodex/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - licodex-prometheus-data:/prometheus
+      - ./src/versionminus/observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - versionminus-prometheus-data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
       - otel-collector
     networks:
-      - licodex
+      - versionminus
 
 # Visualization and dashboards
 #
@@ -238,13 +247,13 @@ services:
 # like trace_id
   grafana:
     image: grafana/grafana:10.2.3
-    container_name: licodex-grafana
+    container_name: versionminus-grafana
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
       GF_AUTH_ANONYMOUS_ENABLED: "true"
     volumes:
-      - licodex-grafana-data:/var/lib/grafana
+      - versionminus-grafana-data:/var/lib/grafana
     ports:
       - "3000:3000"
     depends_on:
@@ -252,27 +261,27 @@ services:
       - loki
       - tempo
     networks:
-      - licodex
+      - versionminus
 
 volumes:
-  licodex-db-data:
-    name: licodex-db-data
-  licodex-milvus:
-    name: licodex-milvus
-  licodex-milvus-minio:
-    name: licodex-milvus-minio
-  licodex-milvus-etcd:
-    name: licodex-milvus-etcd
-  licodex-loki-data:
-    name: licodex-loki-data
-  licodex-prometheus-data:
-    name: licodex-prometheus-data
-  licodex-tempo-data:
-    name: licodex-tempo-data
-  licodex-grafana-data:
-    name: licodex-grafana-data
+  versionminus-db-data:
+    name: versionminus-db-data
+  versionminus-milvus:
+    name: versionminus-milvus
+  versionminus-milvus-minio:
+    name: versionminus-milvus-minio
+  versionminus-milvus-etcd:
+    name: versionminus-milvus-etcd
+  versionminus-loki-data:
+    name: versionminus-loki-data
+  versionminus-prometheus-data:
+    name: versionminus-prometheus-data
+  versionminus-tempo-data:
+    name: versionminus-tempo-data
+  versionminus-grafana-data:
+    name: versionminus-grafana-data
 
 networks:
-  licodex:
-    name: licodex
+  versionminus:
+    name: versionminus
     external: true

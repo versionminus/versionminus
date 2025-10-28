@@ -29,7 +29,7 @@ Options:
 Environment overrides:
   BASE_URL, API_PREFIX, THREADS_PER_USER, MESSAGES_PER_THREAD
   FORCED_USER_IDS   Comma-separated list mapping emails to fixed IDs. Example:
-                    FORCED_USER_IDS="diogo@licodex.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4,nuno@licodex.com=11111111-2222-3333-4444-555555555555"
+                    FORCED_USER_IDS="diogo@versionminus.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4,nuno@versionminus.com=11111111-2222-3333-4444-555555555555"
                     If provided, the script will attempt to create users with these IDs (by sending id in POST).
                     If the API rejects custom IDs and a user already exists (409), the existing ID MUST match the forced one or the script fails.
 USAGE
@@ -92,10 +92,10 @@ THREADS_PER_USER=${THREADS_PER_USER:-0}
 MESSAGES_PER_THREAD=${MESSAGES_PER_THREAD:-0}
 
 USERS=(
-  "diogo@licodex.com"
+  "diogo@versionminus.com"
 )
 
-FORCED_USER_IDS="diogo@licodex.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4"
+FORCED_USER_IDS="diogo@versionminus.com=ad66a062-fda4-41e5-8d4e-f260965dc4f4"
 
 # Optional forced user IDs (email -> id) provided via FORCED_USER_IDS env var
 # Format: email1=id1,email2=id2

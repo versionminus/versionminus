@@ -1,5 +1,5 @@
 import pytest
-from licodex.core.config import get_settings
+from versionminus.core.config import get_settings
 
 # Using httpx AsyncClient fixture from conftest (client)
 
@@ -35,9 +35,9 @@ async def test_chat_completion_invalid_model_rejected(client):
 
 @pytest.mark.asyncio
 async def test_chat_thread_request_model_default(client, db_session):
-    from licodex.models.user import User
-    from licodex.models.thread import Thread
-    from licodex.db.session import AsyncSessionLocal
+    from versionminus.models.user import User
+    from versionminus.models.thread import Thread
+    from versionminus.db.session import AsyncSessionLocal
 
     # Create a user and thread via ORM directly
     async with AsyncSessionLocal() as session:  # type: ignore
@@ -61,9 +61,9 @@ async def test_chat_thread_request_model_default(client, db_session):
 
 @pytest.mark.asyncio
 async def test_chat_thread_request_invalid_model_rejected(client, db_session):
-    from licodex.models.user import User
-    from licodex.models.thread import Thread
-    from licodex.db.session import AsyncSessionLocal
+    from versionminus.models.user import User
+    from versionminus.models.thread import Thread
+    from versionminus.db.session import AsyncSessionLocal
 
     async with AsyncSessionLocal() as session:  # type: ignore
         user = User(email="x@example.com", role="user")

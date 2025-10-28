@@ -29,3 +29,5 @@ build-essential
 git
 telnet
 git-lfs
+openssh-client
+imagemagick

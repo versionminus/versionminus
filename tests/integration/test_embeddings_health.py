@@ -6,7 +6,7 @@ import pytest
 @pytest.mark.integration
 async def test_embeddings_health_ready_with_default(client, monkeypatch):
     """Milvus reachable; 'notes' present => ready True and default_collection_present True."""
-    from licodex.api.routers import embeddings as emb
+    from versionminus.api.routers import embeddings as emb
     monkeypatch.setattr(emb, "get_milvus", lambda: None)
     monkeypatch.setattr(emb.utility, "list_collections", lambda: ["notes", "other"])
 
@@ -21,7 +21,7 @@ async def test_embeddings_health_ready_with_default(client, monkeypatch):
 @pytest.mark.integration
 async def test_embeddings_health_ready_without_default(client, monkeypatch):
     """Milvus reachable; 'notes' absent => ready True but default_collection_present False."""
-    from licodex.api.routers import embeddings as emb
+    from versionminus.api.routers import embeddings as emb
     monkeypatch.setattr(emb, "get_milvus", lambda: None)
     monkeypatch.setattr(emb.utility, "list_collections", lambda: ["foo", "bar"])
 
@@ -36,7 +36,7 @@ async def test_embeddings_health_ready_without_default(client, monkeypatch):
 @pytest.mark.integration
 async def test_embeddings_health_not_ready(client, monkeypatch):
     """Milvus not reachable => ready False and empty collections."""
-    from licodex.api.routers import embeddings as emb
+    from versionminus.api.routers import embeddings as emb
     def _raise():  # simulate connection failure
         raise RuntimeError("milvus down")
     monkeypatch.setattr(emb, "get_milvus", _raise)

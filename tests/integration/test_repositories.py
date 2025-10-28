@@ -3,13 +3,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from licodex.models.user import User
-from licodex.models.thread import Thread
-from licodex.models.message import Message
+from versionminus.models.user import User
+from versionminus.models.thread import Thread
+from versionminus.models.message import Message
 
-from licodex.repositories import user as user_repo
-from licodex.repositories import thread as thread_repo
-from licodex.repositories import message as message_repo
+from versionminus.repositories import user as user_repo
+from versionminus.repositories import thread as thread_repo
+from versionminus.repositories import message as message_repo
 
 @pytest.mark.asyncio
 @pytest.mark.integration
