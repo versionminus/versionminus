@@ -1,7 +1,0 @@
-# Core-specific requirements (in addition to shared service/model/etc.)
-# boto3 required by licodex.core.milvus.EmbeddingsService
-boto3>=1.34.0,<2
-
-# OIDC / JWT support (remove legacy 'jose' which was Python 2 era and
-# shadows python-jose). We depend on python-jose for token verification.
-python-jose[cryptography]==3.3.0

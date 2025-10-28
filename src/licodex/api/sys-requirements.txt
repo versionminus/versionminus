@@ -1,5 +1,0 @@
-build-essential
-curl
-libssl-dev
-libffi-dev
-python3-dev
