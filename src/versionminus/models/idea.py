@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, DateTime, Boolean, Enum, func, ForeignKey
-from licodex.db.session import Base
+from versionminus.db.session import Base
 import enum
 
 class IdeaStatus(str, enum.Enum):

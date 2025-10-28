@@ -19,7 +19,6 @@ For the React client, supply the matching Vite variables (either in `src/version
 - `VITE_AUTH0_DOMAIN`
 - `VITE_AUTH0_CLIENT_ID`
 - `VITE_AUTH0_AUDIENCE`
-- `VITE_AUTH0_REDIRECT_URI` (usually `http://localhost` locally)
 - `VITE_AUTH0_SCOPE` (defaults to `openid profile email offline_access`)
 - `VITE_API_BASE` (`/api` when you proxy through the same origin)
 
@@ -43,7 +42,7 @@ Wrap the SPA with `Auth0Provider` and request an access token via `@auth0/auth0-
   clientId={import.meta.env.VITE_AUTH0_CLIENT_ID}
   authorizationParams={{
     audience: import.meta.env.VITE_AUTH0_AUDIENCE,
-    redirect_uri: import.meta.env.VITE_AUTH0_REDIRECT_URI || window.location.origin,
+    redirect_uri: window.location.origin,
     scope: import.meta.env.VITE_AUTH0_SCOPE || 'openid profile email offline_access',
   }}
   cacheLocation="localstorage"

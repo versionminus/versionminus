@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, ForeignKey
-from licodex.db.session import Base
+from versionminus.db.session import Base
 
 class Thread(Base):
     """chat thread"""

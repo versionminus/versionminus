@@ -209,7 +209,7 @@ services:
     command:
       - "--config=/etc/otelcol/config.yaml"
     volumes:
-      - ./src/versionminus/observability/otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+      - ./src/versionminus/observability/otel-collector:/etc/otelcol:ro
     ports:
       - "4317:4317"
       - "4318:4318"

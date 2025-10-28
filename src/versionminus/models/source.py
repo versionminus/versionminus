@@ -1,7 +1,7 @@
 import uuid
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, ForeignKey, Text, Float
-from licodex.db.session import Base
+from versionminus.db.session import Base
 
 class Source(Base):
     """Retrieved quote used to ground a chat response.

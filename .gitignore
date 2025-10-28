@@ -10,7 +10,6 @@
 **/coverage
 **/node_modules
 tests/test.db
-models
 **/*.png
 **/*.jpeg
 
@@ -31,6 +30,7 @@ models
 !.devcontainer/devcontainer.json
 !.vscode/*.json
 !**/logo.jpeg
+!**/logo.png
 !package*.json
 !**/quotes.json
 !**/tsconfig.json

@@ -25,6 +25,7 @@ COPY src/versionminus/alembic.ini ./alembic.ini
 COPY src/versionminus/alembic ./versionminus/alembic
 COPY src/versionminus/core ./versionminus/core
 COPY src/versionminus/db ./versionminus/db
+COPY src/versionminus/models ./versionminus/models
 COPY src/versionminus/schemas ./versionminus/schemas
 COPY src/versionminus/repositories ./versionminus/repositories
 COPY src/versionminus/services ./versionminus/services

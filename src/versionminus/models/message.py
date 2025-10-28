@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy import String, ForeignKey, Text, DateTime
-from licodex.db.session import Base
+from versionminus.db.session import Base
 from typing import TYPE_CHECKING
 
 class Message(Base):
