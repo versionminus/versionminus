@@ -57,7 +57,7 @@ if settings.auth_enabled:
         if path in EXEMPT_PATHS or any(path.startswith(prefix) for prefix in EXEMPT_PREFIXES):
             return await call_next(request)
         auth = request.headers.get("Authorization")
-        if (not auth or not auth.startswith("Bearer ")) and settings.auth_testing_mode:
+        if (not auth or not auth.startswith("Bearer ")) and not settings.auth_enabled:
             # Inject dummy claims for tests
             request.state.verified_claims = {
                 "sub": "test-user",

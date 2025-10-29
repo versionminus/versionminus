@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useversionminus } from '@versionminus/sdk';
 import type { Note } from '@versionminus/sdk';
 import { useAuth0 } from '@auth0/auth0-react';
@@ -8,6 +8,7 @@ import { NotesEditor } from '../components/NotesEditor';
 import { QuotesComponent } from '../components/QuotesComponent';
 import { ThreadsPanel } from '../components/ThreadsPanel';
 import { SystemBar } from '../components/SystemBar';
+import { LandingPage } from './LandingPage';
 
 export function App() {
   // Allow overriding API base via Vite env variable. Use relative /api (proxied in dev,
@@ -27,8 +28,6 @@ export function App() {
 
   const [token, setToken] = useState<string>();
   const [tokenError, setTokenError] = useState<string | undefined>();
-  const [autoLoginEnabled, setAutoLoginEnabled] = useState(true);
-  const loginInitiatedRef = useRef(false);
 
   const versionminus = useversionminus({ baseUrl: apiBase, token });
 
@@ -50,7 +49,6 @@ export function App() {
     } catch (err: any) {
       const code = err?.error || err?.code;
       if (code === 'login_required' || code === 'consent_required') {
-        loginInitiatedRef.current = false;
         await loginWithRedirect();
         return;
       }
@@ -64,16 +62,11 @@ export function App() {
     if (authLoading) return;
     if (!isAuthenticated) {
       setToken(undefined);
-      if (autoLoginEnabled && !loginInitiatedRef.current) {
-        loginInitiatedRef.current = true;
-        void loginWithRedirect();
-      }
+      setTokenError(undefined);
       return;
     }
-    loginInitiatedRef.current = false;
-    setAutoLoginEnabled(true);
     void requestToken();
-  }, [authLoading, isAuthenticated, autoLoginEnabled, loginWithRedirect, requestToken]);
+  }, [authLoading, isAuthenticated, requestToken]);
 
   const currentUserId = versionminus.currentUser?.id;
 
@@ -99,15 +92,11 @@ export function App() {
   }, [versionminus, selectedNote]);
 
   const handleLogin = useCallback(() => {
-    setAutoLoginEnabled(true);
-    loginInitiatedRef.current = true;
     void loginWithRedirect();
   }, [loginWithRedirect]);
 
   const handleLogout = useCallback(() => {
     setToken(undefined);
-    setAutoLoginEnabled(false);
-    loginInitiatedRef.current = false;
     logout({ logoutParams: { returnTo: window.location.origin } });
   }, [logout]);
 
@@ -141,15 +130,7 @@ export function App() {
   }
 
   if (!isAuthenticated) {
-    return (
-      <div className="auth-screen">
-        <h1>versionminus</h1>
-        <p>{autoLoginEnabled ? 'Redirecting to sign in…' : 'You are signed out.'}</p>
-        {!autoLoginEnabled && (
-          <button className="btn outline" onClick={handleLogin}>Sign in</button>
-        )}
-      </div>
-    );
+    return <LandingPage onRegister={handleLogin} />;
   }
 
   if (!token) {
