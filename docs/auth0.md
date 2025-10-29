@@ -93,7 +93,7 @@ The response contains an `access_token`. Call the API with it:
 
 ```bash
 TOKEN="paste-token-here"
-curl http://localhost:8000/api/v1/notes/ \
+curl http://versionminus-api:8000/api/v1/notes/ \
   --header "Authorization: Bearer ${TOKEN}"
 ```
 

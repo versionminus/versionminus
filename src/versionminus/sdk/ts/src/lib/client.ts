@@ -1,7 +1,7 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosInstance, AxiosError, AxiosHeaders } from 'axios';
 import { versionminusConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID, versionminusLogger, Source } from './types';
 
-export const DEFAULT_BASE_URL = 'http://localhost:8000';
+export const DEFAULT_BASE_URL = 'http://versionminus-api:8000';
 export const VERSION="1.0.0";
 
 // Server FastAPI settings.api_prefix is "/api/v1". We expect callers to pass a baseUrl
@@ -22,6 +22,19 @@ export class versionminusClient {
       baseURL: baseUrl,
       timeout: config.timeoutMs ?? 60000,
       headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : undefined,
+    });
+
+    this.axios.interceptors.request.use((req) => {
+      const headers = req.headers instanceof AxiosHeaders
+        ? req.headers
+        : AxiosHeaders.from(req.headers || {});
+      req.headers = headers;
+      if (this.config.apiKey) {
+        headers.set('Authorization', `Bearer ${this.config.apiKey}`);
+      } else {
+        headers.delete('Authorization');
+      }
+      return req;
     });
 
     if (logRequests) {
@@ -77,8 +90,6 @@ export class versionminusClient {
 
   setApiKey(apiKey?: string) {
     this.config.apiKey = apiKey;
-    if (apiKey) this.axios.defaults.headers.Authorization = `Bearer ${apiKey}`;
-    else delete this.axios.defaults.headers.Authorization;
   }
 
   hasApiKey(): boolean {

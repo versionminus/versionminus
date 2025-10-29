@@ -14,7 +14,7 @@ set -euo pipefail
 #   - Milvus running with a 'notes' collection already created
 #
 # Environment overrides:
-#   BASE_URL (default http://localhost:8000)
+#   BASE_URL (default http://versionminus-api:8000)
 #   API_PREFIX (default /api/v1)
 #
 # Flags:
@@ -23,7 +23,7 @@ set -euo pipefail
 #
 # Exit codes: 0 success; non-zero on first failure
 
-BASE_URL="${BASE_URL:-http://localhost:8000}"
+BASE_URL="${BASE_URL:-http://versionminus-api:8000}"
 API_PREFIX="${API_PREFIX:-/api/v1}"
 EMBEDDING_MODEL="${EMBEDDING_MODEL:-openai_text_embedding_ada}"  # keep in sync with config default
 SEARCH_TOP_K="${SEARCH_TOP_K:-5}"

@@ -35,14 +35,14 @@ We're delighted that you decided to contribute to the project.
       cp -n .env.example .env || true
       docker compose up -d milvus-etcd milvus-minio milvus db otel-collector prometheus tempo loki fluent-bit grafana
       docker compose up -d mcp api web
-      echo API: http://localhost:8000/health && echo Docs: http://localhost:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
+      echo API: http://versionminus-api:8000/health && echo Docs: http://versionminus-api:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
     </fast-start>
     <api-only>
       docker network create versionminus || true
       cp -n .env.example .env || true
       docker compose up -d db
       make run
-      # open http://localhost:8000/docs
+      # open http://versionminus-api:8000/docs
     </api-only>
   </golden-paths>
 
@@ -80,7 +80,7 @@ We're delighted that you decided to contribute to the project.
 
   <state-audit>
     <containers>docker compose ps</containers>
-    <health>curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health</health>
+    <health>curl -s -o /dev/null -w "%{http_code}\n" http://versionminus-api:8000/health</health>
     <db>docker exec versionminus-db psql -U versionminus -d versionminus -c "select 1"</db>
     <observability>open Grafana at http://localhost:3000 and check data sources</observability>
   </state-audit>
@@ -190,8 +190,8 @@ Checklist to keep HTTPS healthy
 - Start API
   - `docker compose up -d mcp`
   - `docker compose up -d api`
-  - Verify: `curl http://localhost:8000/health` → `200 OK`
-  - Docs: open `http://localhost:8000/docs`
+  - Verify: `curl http://versionminus-api:8000/health` → `200 OK`
+  - Docs: open `http://versionminus-api:8000/docs`
 
 - Start Web UI (choose one)
   - Docker (static build): `docker compose up -d web` → `http://localhost:5173`
@@ -227,7 +227,7 @@ Checklist to keep HTTPS healthy
 - Local development (API hot‑reload)
   - Python deps: `pip install -r .devcontainer/python-requirements.txt`
   - App: `pip install -e .`
-  - Run: `make run` → `http://localhost:8000`
+  - Run: `make run` → `http://versionminus-api:8000`
 
 - Frontend development
   - SDK build: `cd src/versionminus/sdk/ts && npm install && npm run build`
