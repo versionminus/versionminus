@@ -41,15 +41,23 @@ export function App() {
 
   const requestToken = useCallback(async () => {
     try {
-      const tokenResult = await getAccessTokenSilently(
-        audience ? { authorizationParams: { audience } } : undefined
-      );
+      const tokenResult = await getAccessTokenSilently({
+        authorizationParams: {
+          ...(audience ? { audience } : {}),
+          scope: 'openid profile email',
+        },
+      });
       setToken(tokenResult);
       setTokenError(undefined);
     } catch (err: any) {
       const code = err?.error || err?.code;
       if (code === 'login_required' || code === 'consent_required') {
-        await loginWithRedirect();
+        await loginWithRedirect({
+          authorizationParams: {
+            ...(audience ? { audience } : {}),
+            scope: 'openid profile email',
+          },
+        });
         return;
       }
       console.error('Failed to fetch access token', err);
@@ -92,8 +100,13 @@ export function App() {
   }, [versionminus, selectedNote]);
 
   const handleLogin = useCallback(() => {
-    void loginWithRedirect();
-  }, [loginWithRedirect]);
+    void loginWithRedirect({
+      authorizationParams: {
+        ...(audience ? { audience } : {}),
+        scope: 'openid profile email',
+      },
+    });
+  }, [audience, loginWithRedirect]);
 
   const handleLogout = useCallback(() => {
     setToken(undefined);

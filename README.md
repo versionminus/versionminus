@@ -198,6 +198,33 @@ Checklist to keep HTTPS healthy
   - Dev server: `cd src/versionminus/client/web && npm install && npm run dev`
 
 - First data smoke tests (optional)
+
+## Auth0 configuration
+
+### Inject email into access tokens
+
+When `AUTH_ENABLED=true` the API auto‑provisions users from Auth0. The backend expects the Auth0 **access token** (not just the ID token) to carry an email address. Add an Auth0 Action so each issued access token includes the email claim:
+
+1. In the Auth0 dashboard open `Actions → Library → Build Custom`.
+2. Choose the **Post Login** trigger, name the action (e.g. `AttachEmailToAccessToken`), and create it.
+3. Replace the generated code with:
+
+   ```js
+   exports.onExecutePostLogin = async (event, api) => {
+     const email = event.user?.email;
+     if (!email) return;
+
+     api.accessToken.setCustomClaim('https://versionminus.com/email', email);
+     api.accessToken.setCustomClaim('https://versionminus.com/email_verified', !!event.user?.email_verified);
+     api.accessToken.setCustomClaim('email', email); // temporary compatibility with existing backend
+   };
+   ```
+
+4. Click **Deploy**.
+5. Go to `Actions → Triggers → post-login`, drag the new action into the flow between **Start** and **Complete**, and press **Apply**.
+6. Sign out and back in. Inspect the network request for `/api/v1/users/me` — the bearer token should now contain `email` (and the namespaced claim). The backend will auto-provision the local user on the next request.
+
+If you later move the backend to the namespaced claim, remove the temporary line that sets the top-level `email`.
   - Populate threads/messages: `make smoke-populate clean_before=1`
   - Populate embeddings: `make smoke-embed-populate`
 

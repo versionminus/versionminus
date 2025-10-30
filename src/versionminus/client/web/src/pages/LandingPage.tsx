@@ -38,7 +38,7 @@ export function LandingPage({ onRegister }: LandingPageProps) {
             <div className="landing-beta">
               <span className="landing-pill">beta</span>
               <span className="landing-muted">
-                Register{' '}
+                Register/login{' '}
                 <button type="button" className="landing-link-button" onClick={onRegister}>
                   here
                 </button>{' '}
