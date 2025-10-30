@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Smoke test against a running instance (default: http://localhost:8000)
+# Smoke test against a running instance (default: http://versionminus-api:8000)
 # Validates:
 #  - health & root endpoints
 #  - ensure specific users exist (idempotent): diogo, nuno, shan
@@ -9,7 +9,7 @@ set -euo pipefail
 #  - for each thread: create several messages
 #  - basic verification of creations
 
-BASE_URL="${BASE_URL:-http://localhost:8000}"
+BASE_URL="${BASE_URL:-http://versionminus-api:8000}"
 API_PREFIX="${API_PREFIX:-/api/v1}"
 HELPER="$(dirname "$0")/smoke_helpers.py"
 

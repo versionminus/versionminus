@@ -13,7 +13,7 @@ export default defineConfig({
     proxy: {
       // Forward /api/* to backend without stripping so backend still sees /api/v1/... path.
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://versionminus-api:8000',
         changeOrigin: true
       }
     }

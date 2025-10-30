@@ -35,14 +35,14 @@ We're delighted that you decided to contribute to the project.
       cp -n .env.example .env || true
       docker compose up -d milvus-etcd milvus-minio milvus db otel-collector prometheus tempo loki fluent-bit grafana
       docker compose up -d mcp api web
-      echo API: http://localhost:8000/health && echo Docs: http://localhost:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
+      echo API: http://versionminus-api:8000/health && echo Docs: http://versionminus-api:8000/docs && echo Web: http://localhost:5173 && echo Grafana: http://localhost:3000
     </fast-start>
     <api-only>
       docker network create versionminus || true
       cp -n .env.example .env || true
       docker compose up -d db
       make run
-      # open http://localhost:8000/docs
+      # open http://versionminus-api:8000/docs
     </api-only>
   </golden-paths>
 
@@ -80,7 +80,7 @@ We're delighted that you decided to contribute to the project.
 
   <state-audit>
     <containers>docker compose ps</containers>
-    <health>curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8000/health</health>
+    <health>curl -s -o /dev/null -w "%{http_code}\n" http://versionminus-api:8000/health</health>
     <db>docker exec versionminus-db psql -U versionminus -d versionminus -c "select 1"</db>
     <observability>open Grafana at http://localhost:3000 and check data sources</observability>
   </state-audit>
@@ -190,14 +190,41 @@ Checklist to keep HTTPS healthy
 - Start API
   - `docker compose up -d mcp`
   - `docker compose up -d api`
-  - Verify: `curl http://localhost:8000/health` → `200 OK`
-  - Docs: open `http://localhost:8000/docs`
+  - Verify: `curl http://versionminus-api:8000/health` → `200 OK`
+  - Docs: open `http://versionminus-api:8000/docs`
 
 - Start Web UI (choose one)
   - Docker (static build): `docker compose up -d web` → `http://localhost:5173`
   - Dev server: `cd src/versionminus/client/web && npm install && npm run dev`
 
 - First data smoke tests (optional)
+
+## Auth0 configuration
+
+### Inject email into access tokens
+
+When `AUTH_ENABLED=true` the API auto‑provisions users from Auth0. The backend expects the Auth0 **access token** (not just the ID token) to carry an email address. Add an Auth0 Action so each issued access token includes the email claim:
+
+1. In the Auth0 dashboard open `Actions → Library → Build Custom`.
+2. Choose the **Post Login** trigger, name the action (e.g. `AttachEmailToAccessToken`), and create it.
+3. Replace the generated code with:
+
+   ```js
+   exports.onExecutePostLogin = async (event, api) => {
+     const email = event.user?.email;
+     if (!email) return;
+
+     api.accessToken.setCustomClaim('https://versionminus.com/email', email);
+     api.accessToken.setCustomClaim('https://versionminus.com/email_verified', !!event.user?.email_verified);
+     api.accessToken.setCustomClaim('email', email); // temporary compatibility with existing backend
+   };
+   ```
+
+4. Click **Deploy**.
+5. Go to `Actions → Triggers → post-login`, drag the new action into the flow between **Start** and **Complete**, and press **Apply**.
+6. Sign out and back in. Inspect the network request for `/api/v1/users/me` — the bearer token should now contain `email` (and the namespaced claim). The backend will auto-provision the local user on the next request.
+
+If you later move the backend to the namespaced claim, remove the temporary line that sets the top-level `email`.
   - Populate threads/messages: `make smoke-populate clean_before=1`
   - Populate embeddings: `make smoke-embed-populate`
 
@@ -227,7 +254,7 @@ Checklist to keep HTTPS healthy
 - Local development (API hot‑reload)
   - Python deps: `pip install -r .devcontainer/python-requirements.txt`
   - App: `pip install -e .`
-  - Run: `make run` → `http://localhost:8000`
+  - Run: `make run` → `http://versionminus-api:8000`
 
 - Frontend development
   - SDK build: `cd src/versionminus/sdk/ts && npm install && npm run build`
@@ -472,7 +499,7 @@ Useful commands for debugging
 ```sh
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from message"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from note"
-docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from user"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from users"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from source"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from thread"
 ```

@@ -47,3 +47,5 @@ read the [docs](https://code.visualstudio.com/shortcuts/keyboard-shortcuts-macos
 | inline copilot                 | `Cmd` + `I`                      |
 | open codex                   | `Cmd` + `Shift` + `C` + `X`        |
 | close codex                   | `Cmd` + `Shift` + `C` + `X`       |
+| new terminal tab                   | `TODO`       |
+| navigate terminal tabs                   | `TODO`       |

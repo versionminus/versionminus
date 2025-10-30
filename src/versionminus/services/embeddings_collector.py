@@ -40,7 +40,7 @@ async def collect_missing_embeddings(session: AsyncSession, base_url: str | None
     session: AsyncSession
         Active DB session.
     base_url: str | None
-        Base URL of the running API (e.g. http://localhost:8000). If omitted we try
+        Base URL of the running API (e.g. http://versionminus-api:8000). If omitted we try
         to infer from settings (host/port) for in-process deployment.
     batch_size: int
         Number of notes to send per embedding request.
