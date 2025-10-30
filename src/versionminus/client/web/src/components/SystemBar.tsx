@@ -1,8 +1,9 @@
 import React from 'react';
-import { UseversionminusReturn } from '@versionminus/sdk';
+import { UseversionminusReturn, getVersion } from '@versionminus/sdk';
 import { Icon } from './Icon';
 
 const SYSBAR_ICON_SIZE = 16;
+const sdkVersion = getVersion();
 
 interface Props {
   versionminus: UseversionminusReturn;
@@ -87,7 +88,7 @@ export function SystemBar({
         >
           <Icon name="money" size={SYSBAR_ICON_SIZE} />
         </button>
-        <div className="sysbar-version">v1.0.0</div>
+        <div className="sysbar-version">v{sdkVersion}</div>
       </div>
     </div>
   );

@@ -1,8 +1,9 @@
 import axios, { AxiosInstance, AxiosError, AxiosHeaders } from 'axios';
 import { versionminusConfig, Note, NoteInput, QuestionAnswer, QuestionRequest, Thread, ThreadInput, Message, MessageInput, ChatSendRequest, ChatSendResponse, User, UserCreate, DEFAULT_USER_ID, versionminusLogger, Source } from './types';
+import { getVersion } from './version';
 
 export const DEFAULT_BASE_URL = 'http://versionminus-api:8000';
-export const VERSION="1.0.0";
+export const VERSION = getVersion();
 
 // Server FastAPI settings.api_prefix is "/api/v1". We expect callers to pass a baseUrl
 // that already includes the leading /api (e.g. baseUrl="/api" in the browser) so we

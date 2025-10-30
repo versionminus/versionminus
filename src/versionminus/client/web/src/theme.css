@@ -173,7 +173,7 @@ button { font-family: inherit; }
 }
 .sysbar-email {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.01em;
   color: var(--sysbar-text);
 }
