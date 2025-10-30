@@ -499,7 +499,7 @@ Useful commands for debugging
 ```sh
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from message"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from note"
-docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from user"
+docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from users"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from source"
 docker exec versionminus-db psql -U versionminus -d versionminus -c "select * from thread"
 ```

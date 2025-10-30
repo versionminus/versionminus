@@ -33,6 +33,7 @@ tests/test.db
 !**/logo.png
 !package*.json
 !**/quotes.json
+!**/quotes-science-engineering.json
 !**/tsconfig.json
 !**/tsconfig.base.json
 !**/tsconfig.build.json

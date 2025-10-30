@@ -1,6 +1,8 @@
 import React from 'react';
 import { UseversionminusReturn } from '@versionminus/sdk';
-import { Icon, ICON_SIZE } from './Icon';
+import { Icon } from './Icon';
+
+const SYSBAR_ICON_SIZE = 16;
 
 interface Props {
   versionminus: UseversionminusReturn;
@@ -27,23 +29,66 @@ export function SystemBar({
   const displayEmail = user?.email || userEmail || '';
   return (
     <div className="sysbar">
-      <div className="sysbar-title">versionminus</div>
-      <div className="user-email">
-        {displayEmail || (loadingUser ? 'loading…' : '—')}
+      <div className="sysbar-left">
+        <img src="/logo.png" alt="versionminus logo" className="sysbar-logo" />
+        <span className="sysbar-email">
+          {displayEmail || (loadingUser ? 'loading…' : '—')}
+        </span>
       </div>
-      <div className="sysbar-spacer" />
-      {onLogout && (
-        <button className="btn outline small" title="Sign out" onClick={onLogout}>
-          Sign out
+      <div className="sysbar-actions">
+        {onLogout && (
+          <button
+            type="button"
+            className="sysbar-button"
+            title="Sign out"
+            aria-label="Sign out"
+            onClick={onLogout}
+          >
+            <Icon name="logout" size={SYSBAR_ICON_SIZE} />
+          </button>
+        )}
+        <button
+          type="button"
+          className="sysbar-button"
+          title="Toggle chat panel"
+          aria-label={showThreads ? 'Hide chat panel' : 'Show chat panel'}
+          aria-pressed={showThreads}
+          data-active={showThreads}
+          onClick={onToggleThreads}
+        >
+          <Icon name="chat" size={SYSBAR_ICON_SIZE} />
         </button>
-      )}
-      <button className={`btn outline small ${showThreads ? '' : 'inactive'}`} title="Toggle threads" onClick={onToggleThreads}>
-        <Icon name="threads" size={ICON_SIZE} />
-      </button>
-      <button className={`btn outline small ${showNotes ? '' : 'inactive'}`} title="Toggle notes" onClick={onToggleNotes}>
-        <Icon name="note" size={ICON_SIZE} />
-      </button>
-      <div className="version-text">v1.0.0</div>
+        <button
+          type="button"
+          className="sysbar-button"
+          title="Toggle notes panel"
+          aria-label={showNotes ? 'Hide notes panel' : 'Show notes panel'}
+          aria-pressed={showNotes}
+          data-active={showNotes}
+          onClick={onToggleNotes}
+        >
+          <Icon name="file" size={SYSBAR_ICON_SIZE} />
+        </button>
+        <button
+          type="button"
+          className="sysbar-button"
+          title="Schedule (coming soon)"
+          aria-label="Schedule (coming soon)"
+          disabled
+        >
+          <Icon name="calendar" size={SYSBAR_ICON_SIZE} />
+        </button>
+        <button
+          type="button"
+          className="sysbar-button"
+          title="Finances (coming soon)"
+          aria-label="Finances (coming soon)"
+          disabled
+        >
+          <Icon name="money" size={SYSBAR_ICON_SIZE} />
+        </button>
+        <div className="sysbar-version">v1.0.0</div>
+      </div>
     </div>
   );
 }
