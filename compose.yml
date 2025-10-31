@@ -141,6 +141,8 @@ services:
       context: .
       dockerfile: src/versionminus/client/web/Dockerfile
       target: runtime
+      args:
+        VITE_DEPLOYMENT_ENV: ${VITE_DEPLOYMENT_ENV:-dev}
     image: versionminus-web:1.0.0
     container_name: versionminus-web
     restart: unless-stopped

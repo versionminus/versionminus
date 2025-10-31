@@ -1,17 +1,25 @@
-# Stage 1: build SDK + web assets
+# Stage 1: build web assets using the published SDK
 FROM node:20-alpine AS build
 
-# Build the TypeScript SDK once and reuse the compiled output
-WORKDIR /sdk/ts
-COPY src/versionminus/sdk/ts/package*.json ./
-RUN npm install
-COPY src/versionminus/sdk/ts ./
-RUN npm run build
+ARG VITE_DEPLOYMENT_ENV
+ENV DEPLOYMENT_ENV=${VITE_DEPLOYMENT_ENV:-dev}
 
-# Build the React web client that depends on the local SDK
 WORKDIR /app
-COPY src/versionminus/client/web ./
-RUN npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
+COPY src/versionminus/client/web§ ./
+
+# Install dependencies with the correct SDK dist-tag for the deployment environment
+RUN set -euo pipefail; \
+    case "${DEPLOYMENT_ENV}" in \
+      dev) SDK_DIST_TAG="dev" ;; \
+      beta) SDK_DIST_TAG="beta" ;; \
+      rc) SDK_DIST_TAG="rc" ;; \
+      stable) SDK_DIST_TAG="latest" ;; \
+      *) echo "Unsupported DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}" >&2; exit 1 ;; \
+    esac; \
+    echo "Installing @versionminus/sdk@${SDK_DIST_TAG} for ${DEPLOYMENT_ENV} deployment"; \
+    npm pkg set "dependencies.@versionminus/sdk=@versionminus/sdk@${SDK_DIST_TAG}"; \
+    npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
+
 RUN npm run build
 
 # Stage 2: nginx serve
