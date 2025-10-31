@@ -136,21 +136,25 @@ services:
       - versionminus
 
   # FRONTEND ###################################################################
+  #
+  # local builds
+  #
+  # VITE_DEPLOYMENT_ENV=stable docker compose build --no-cache web
   web:
     build:
       context: .
       dockerfile: src/versionminus/client/web/Dockerfile
       target: runtime
-      args:
+      args: # build-time args
         VITE_DEPLOYMENT_ENV: ${VITE_DEPLOYMENT_ENV:-dev}
+    env_file: # run-time env vars
+      - src/versionminus/client/web/.env
     image: versionminus-web:1.0.0
     container_name: versionminus-web
     restart: unless-stopped
     depends_on:
       api:
         condition: service_started
-    env_file:
-      - src/versionminus/client/web/.env
     environment:
       VITE_API_BASE_URL: http://versionminus-api:8000
     ports:

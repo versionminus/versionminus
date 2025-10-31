@@ -1,8 +1,8 @@
 ################################################################################
 # Publish versionminus TypeScript SDK
 #
-# This workflow publishes the TypeScript SDK (`src/versionminus/sdk/ts`) to the
-# `@versionminus` npm organisation via GitHub Actions. Release tags follow the
+# This workflow publishes the TypeScript SDK (`src/versionminus/sdk/ts`) as the
+# `versionminus` npm package via GitHub Actions. Release tags follow the
 # pattern `sdk-v<semver>`, with optional prerelease suffixes to map to the
 # correct npm dist-tag:
 #
@@ -16,7 +16,7 @@
 # 1. Determine the version from the tag and choose the matching dist-tag.
 # 2. Update `package.json` via `npm version <semver> --no-git-tag-version`.
 # 3. Install dependencies, build, and `npm publish --tag <dist-tag>` using the
-#    `NPM_TOKEN` secret scoped to the `@versionminus` organisation.
+#    `NPM_TOKEN` secret with rights to publish the `versionminus` package.
 ################################################################################
 
 name: Publish versionminus TypeScript SDK

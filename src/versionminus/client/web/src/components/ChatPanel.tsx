@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, ICON_SIZE } from './Icon';
-// Import from package root; deep path '@versionminus/lib/hooks/useversionminus' does not exist in published package.
-import type { UseversionminusReturn, Note, Message } from '@versionminus';
+// Import from package root; deep path 'versionminus/lib/hooks/useversionminus' does not exist in published package.
+import type { UseversionminusReturn, Note, Message } from 'versionminus';
 
 interface ChatLine { role: 'user' | 'assistant'; content: string; ts: number; }
 

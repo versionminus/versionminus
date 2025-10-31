@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import type { Note } from '@versionminus';
+import type { Note } from 'versionminus';
 import { Icon, ICON_SIZE } from './Icon';
 
 interface Props {
