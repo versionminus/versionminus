@@ -1,0 +1,83 @@
+name: Publish versionminus TypeScript SDK
+
+on:
+  # Automatic deployment trigger on version tags
+  # Tag patterns determine target environment:
+  # - sdk-v1.2.3-b.1  → Development (branch builds)
+  # - sdk-v1.2.3-a.1  → Beta (alpha releases)
+  # - sdk-v1.2.3-rc.1 → Release Candidate
+  # - sdk-v1.2.3      → Stable/Production
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Tag to deploy (e.g., sdk-v1.2.3-rc.1)'
+        required: true
+  push:
+    tags:
+      - 'sdk-v[0-9]+\.[0-9]+\.[0-9]+'
+      - 'sdk-v[0-9]+\.[0-9]+\.[0-9]+-[a-z]+\.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/versionminus/sdk/ts
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine release metadata
+        id: release
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION_TAG='${{ github.event.inputs.version_tag }}'
+          else
+            VERSION_TAG="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ -z "${VERSION_TAG}" ]]; then
+            echo "version_tag input is required when triggering manually." >&2
+            exit 1
+          fi
+
+          VERSION="${VERSION_TAG#sdk-v}" # trime prefix
+
+          if [[ "${VERSION}" == *-b.* ]]; then
+            DIST_TAG="dev"
+          elif [[ "${VERSION}" == *-a.* ]]; then
+            DIST_TAG="beta"
+          elif [[ "${VERSION}" == *-rc.* ]]; then
+            DIST_TAG="rc"
+          else
+            DIST_TAG="latest"
+          fi
+
+          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=${DIST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${VERSION_TAG} as version ${VERSION} with dist-tag ${DIST_TAG}"
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version
+        run: npm version '${{ steps.release.outputs.version }}' --no-git-tag-version --allow-same-version
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag '${{ steps.release.outputs.dist_tag }}'
