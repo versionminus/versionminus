@@ -1,33 +1,37 @@
 import React from 'react';
-import { UseversionminusReturn, getVersion } from '@versionminus/sdk';
+import { getVersion } from '@versionminus/sdk';
 import { Icon } from './Icon';
+import type { IconName } from './Icon';
 
 const SYSBAR_ICON_SIZE = 16;
 const sdkVersion = getVersion();
 
+type ViewKey = 'think' | 'thought' | 'time' | 'money' | 'identity';
+
 interface Props {
-  versionminus: UseversionminusReturn;
-  showThreads: boolean;
-  showNotes: boolean;
-  onToggleThreads: () => void;
-  onToggleNotes: () => void;
+  activeView: ViewKey;
+  onSelect: (view: ViewKey) => void;
   onLogout?: () => void;
   userEmail?: string;
   loadingUser?: boolean;
 }
 
 export function SystemBar({
-  versionminus,
-  showThreads,
-  showNotes,
-  onToggleThreads,
-  onToggleNotes,
+  activeView,
+  onSelect,
   onLogout,
   userEmail,
   loadingUser,
 }: Props) {
-  const user = versionminus.currentUser;
-  const displayEmail = user?.email || userEmail || '';
+  const displayEmail = userEmail || '';
+  const controls: Array<{ key: ViewKey; label: string; icon: IconName; title: string }> = [
+    { key: 'think', label: 'think', icon: 'think', title: 'Conversations' },
+    { key: 'thought', label: 'thought', icon: 'thought', title: 'Notes' },
+    { key: 'time', label: 'time', icon: 'time', title: 'Time' },
+    { key: 'money', label: 'money', icon: 'money', title: 'Money' },
+    { key: 'identity', label: 'identity', icon: 'identity', title: 'Identity graph' },
+  ];
+
   return (
     <div className="sysbar">
       <div className="sysbar-left">
@@ -37,6 +41,20 @@ export function SystemBar({
         </span>
       </div>
       <div className="sysbar-actions">
+        {controls.map(control => (
+          <button
+            key={control.key}
+            type="button"
+            className="sysbar-button"
+            title={control.title}
+            aria-label={control.label}
+            aria-pressed={activeView === control.key}
+            data-active={activeView === control.key}
+            onClick={() => onSelect(control.key)}
+          >
+            <Icon name={control.icon} size={SYSBAR_ICON_SIZE} />
+          </button>
+        ))}
         {onLogout && (
           <button
             type="button"
@@ -48,46 +66,6 @@ export function SystemBar({
             <Icon name="logout" size={SYSBAR_ICON_SIZE} />
           </button>
         )}
-        <button
-          type="button"
-          className="sysbar-button"
-          title="Toggle chat panel"
-          aria-label={showThreads ? 'Hide chat panel' : 'Show chat panel'}
-          aria-pressed={showThreads}
-          data-active={showThreads}
-          onClick={onToggleThreads}
-        >
-          <Icon name="chat" size={SYSBAR_ICON_SIZE} />
-        </button>
-        <button
-          type="button"
-          className="sysbar-button"
-          title="Toggle notes panel"
-          aria-label={showNotes ? 'Hide notes panel' : 'Show notes panel'}
-          aria-pressed={showNotes}
-          data-active={showNotes}
-          onClick={onToggleNotes}
-        >
-          <Icon name="file" size={SYSBAR_ICON_SIZE} />
-        </button>
-        <button
-          type="button"
-          className="sysbar-button"
-          title="Schedule (coming soon)"
-          aria-label="Schedule (coming soon)"
-          disabled
-        >
-          <Icon name="calendar" size={SYSBAR_ICON_SIZE} />
-        </button>
-        <button
-          type="button"
-          className="sysbar-button"
-          title="Finances (coming soon)"
-          aria-label="Finances (coming soon)"
-          disabled
-        >
-          <Icon name="money" size={SYSBAR_ICON_SIZE} />
-        </button>
         <div className="sysbar-version">v{sdkVersion}</div>
       </div>
     </div>

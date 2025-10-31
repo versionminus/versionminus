@@ -1,9 +1,21 @@
 import React from 'react';
 import {
-  VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscArrowUp, VscListUnordered
+  VscAdd,
+  VscClose,
+  VscTrash,
+  VscEdit,
+  VscCheck,
+  VscRefresh,
+  VscSave,
+  VscChevronLeft,
+  VscChevronRight,
+  VscCommentDiscussion,
+  VscNotebook,
+  VscArrowUp,
+  VscListUnordered
 } from 'react-icons/vsc';
 import {
-  FiLogOut, FiMessageCircle, FiFileText, FiCalendar, FiDollarSign
+  FiLogOut, FiMessageCircle, FiFileText, FiCalendar, FiDollarSign, FiFeather, FiAperture
 } from 'react-icons/fi';
 
 export type IconName =
@@ -13,6 +25,9 @@ export type IconName =
   | 'edit'
   | 'check'
   | 'refresh'
+  | 'save'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'threads'
   | 'note'
   | 'send'
@@ -21,7 +36,11 @@ export type IconName =
   | 'chat'
   | 'file'
   | 'calendar'
-  | 'money';
+  | 'money'
+  | 'think'
+  | 'thought'
+  | 'time'
+  | 'identity';
 
 // Single source of truth for sizing all icon-only buttons.
 export const ICON_SIZE = 14; // px
@@ -33,6 +52,9 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   edit: VscEdit,
   check: VscCheck,
   refresh: VscRefresh,
+  save: VscSave,
+  'chevron-left': VscChevronLeft,
+  'chevron-right': VscChevronRight,
   threads: VscCommentDiscussion,
   note: VscNotebook,
   send: VscArrowUp,
@@ -41,7 +63,11 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   chat: FiMessageCircle,
   file: FiFileText,
   calendar: FiCalendar,
-  money: FiDollarSign
+  money: FiDollarSign,
+  think: FiMessageCircle,
+  thought: FiFeather,
+  time: FiCalendar,
+  identity: FiAperture
 };
 
 interface Props { name: IconName; size?: number; }

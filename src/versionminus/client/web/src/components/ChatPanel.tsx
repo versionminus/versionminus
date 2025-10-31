@@ -115,14 +115,26 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
   if (!selectedThreadId) return null; // Only render when a thread is active (Quotes or Note editor shown elsewhere otherwise)
 
   return (
-    <div className="flex-col-full">
+    <div className="flex-col-full chat-panel-shell">
       <div className="terminal-titlebar gap-8">
         <span className="muted-grow">{thread?.title || (selectedNote ? 'note' : '')}</span>
         {thread && (
           <div className="btn-row">
-            <button className="btn outline small" title="Rename thread" onClick={() => void renameThread()}><Icon name="edit" size={ICON_SIZE} /></button>
-            <button className="btn outline small" title="Reset messages" disabled={resetting || versionminus.messages.loading} onClick={() => void resetThread()}><Icon name="refresh" size={ICON_SIZE} /></button>
-            <button className="btn danger small" title="Delete thread" onClick={() => void deleteThread()}><Icon name="trash" size={ICON_SIZE} /></button>
+            <button className="icon-button" type="button" title="Rename thread" onClick={() => void renameThread()}>
+              <Icon name="edit" size={ICON_SIZE} />
+            </button>
+            <button
+              className="icon-button"
+              type="button"
+              title="Reset messages"
+              disabled={resetting || versionminus.messages.loading}
+              onClick={() => void resetThread()}
+            >
+              <Icon name="refresh" size={ICON_SIZE} />
+            </button>
+            <button className="icon-button" type="button" title="Delete thread" onClick={() => void deleteThread()}>
+              <Icon name="trash" size={ICON_SIZE} />
+            </button>
           </div>
         )}
       </div>
@@ -141,7 +153,7 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
                       versionminus &gt; {m.response}
                       {sourcesId && (
                         <button
-                          className='btn tiny outline ml-4'
+                          className='icon-button icon-button--tiny'
                           style={{ marginLeft: 8 }}
                           title={openSourcesFor === m.id ? 'Hide sources' : 'Show sources'}
                           onClick={() => void toggleSources(m)}
