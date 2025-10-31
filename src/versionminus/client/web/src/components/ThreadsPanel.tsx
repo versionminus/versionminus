@@ -44,22 +44,30 @@ export function ThreadsPanel({
     cancel();
   }, [draft, editingId, onCreate, onRename, cancel]);
 
+  const toggleIcon = listVisible ? 'chevron-left' : 'chevron-right';
+
   return (
-    <div className="flex-col-full">
+    <div className="flex-col-full threads-panel">
       <div className="terminal-titlebar gap-6">
-        <span className="muted">think</span>
         <div className="actions-row">
-          <button className="btn" title="New thinking session" onClick={startNew}><Icon name="plus" size={ICON_SIZE} /></button>
+          <button className="icon-button" type="button" title="New thinking session" onClick={startNew}>
+            <Icon name="plus" size={ICON_SIZE} />
+          </button>
           {onToggleList && (
             <button
-              className="btn outline"
+              className="icon-button"
               title={listVisible ? 'Hide thinking sessions' : 'Show thinking sessions'}
+              aria-pressed={!!listVisible}
               onClick={onToggleList}
             >
-              <Icon name="think" size={ICON_SIZE} />
+              <Icon name={toggleIcon} size={ICON_SIZE} />
             </button>
           )}
-          {editingId && <button className="btn outline" title="Cancel" onClick={cancel}><Icon name="x" size={ICON_SIZE} /></button>}
+          {editingId && (
+            <button className="icon-button" type="button" title="Cancel" onClick={cancel}>
+              <Icon name="x" size={ICON_SIZE} />
+            </button>
+          )}
         </div>
       </div>
       <div className="panel-body" style={{ padding: 0 }}>
@@ -77,7 +85,7 @@ export function ThreadsPanel({
               <div className="note-title">{t.title || 'Untitled session'}</div>
             </div>
           ))}
-          {!loading && !(threads?.length) && <div className="fade-text">no thinking sessions yet</div>}
+          {!loading && !(threads?.length)}
         </div>
         {editingId && (
           <div className="btn-row" style={{ width: '100%' }}>
@@ -92,14 +100,22 @@ export function ThreadsPanel({
             />
             {editingId !== 'new' && (
               <button
-                className="btn danger"
+                className="icon-button"
                 title="Delete"
                 onClick={() => { void onDelete(editingId); cancel(); }}
               >
                 <Icon name="trash" size={ICON_SIZE} />
               </button>
             )}
-            <button className="btn" title="Save" disabled={!draft.trim()} onClick={() => { void save(); }}><Icon name="check" size={ICON_SIZE} /></button>
+            <button
+              className="icon-button"
+              type="button"
+              title="Save"
+              disabled={!draft.trim()}
+              onClick={() => { void save(); }}
+            >
+              <Icon name="save" size={ICON_SIZE} />
+            </button>
           </div>
         )}
       </div>

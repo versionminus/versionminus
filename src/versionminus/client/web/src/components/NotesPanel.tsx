@@ -48,19 +48,23 @@ export function NotesPanel({
     if (state === 'error') return <button className="icon-btn" title="retry embedding" onClick={(e) => { e.stopPropagation(); onEmbed?.(n.id); }} style={{ color: 'var(--danger)' }}>●</button>;
     return <button className="icon-btn" title="embed note" onClick={(e) => { e.stopPropagation(); onEmbed?.(n.id); }} style={{ color: 'var(--muted)' }}>○</button>;
   };
+  const toggleIcon = listVisible ? 'chevron-left' : 'chevron-right';
+
   return (
-    <div className="flex-col-full">
+    <div className="flex-col-full notes-panel">
       <div className="terminal-titlebar gap-6">
-        <span className="muted">thought</span>
         <div className="actions-row">
-          <button className="btn" title="New thought" onClick={onNew}><Icon name="plus" size={ICON_SIZE} /></button>
+          <button className="icon-button" type="button" title="New thought" onClick={onNew}>
+            <Icon name="plus" size={ICON_SIZE} />
+          </button>
           {onToggleList && (
             <button
-              className="btn outline"
+              className="icon-button"
               title={listVisible ? 'Hide thoughts' : 'Show thoughts'}
+              aria-pressed={!!listVisible}
               onClick={onToggleList}
             >
-              <Icon name="thought" size={ICON_SIZE} />
+              <Icon name={toggleIcon} size={ICON_SIZE} />
             </button>
           )}
         </div>
@@ -86,7 +90,7 @@ export function NotesPanel({
               </div>
             );
           })}
-          {!notesState.loading && !(notesState.data?.length) && <div className="fade-text">no thoughts yet</div>}
+          {!notesState.loading && !(notesState.data?.length)}
         </div>
         {selectedIds.length > 0 && (
           <div className="note-selection-warning">

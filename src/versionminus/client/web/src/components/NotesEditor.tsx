@@ -63,13 +63,34 @@ export function NotesEditor({
   return (
     <div className="note-fullscreen-container">
       <div className="note-fullscreen-bar">
-        <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" size={ICON_SIZE} /></button>
         {!isNew && (
-          <button className="btn danger" title="Delete" onClick={() => { void handleDelete(); }}><Icon name="trash" size={ICON_SIZE} /></button>
+          <button
+            className="icon-button"
+            type="button"
+            title="Delete"
+            onClick={() => { void handleDelete(); }}
+          >
+            <Icon name="trash" size={ICON_SIZE} />
+          </button>
         )}
         <div className="actions-row">
-          <button className="btn" title="Save" disabled={!content.trim() || saving} onClick={() => { void handleSave(); }}><Icon name="check" size={ICON_SIZE} /></button>
-          <button className="btn outline" title="Close" onClick={onClose}><Icon name="x" size={ICON_SIZE} /></button>
+          <button
+            className="icon-button"
+            type="button"
+            title="Save"
+            disabled={!content.trim() || saving}
+            onClick={() => { void handleSave(); }}
+          >
+            <Icon name="save" size={ICON_SIZE} />
+          </button>
+          <button
+            className="icon-button"
+            type="button"
+            title="Cancel"
+            onClick={onClose}
+          >
+            <Icon name="x" size={ICON_SIZE} />
+          </button>
         </div>
       </div>
       <div className="note-fullscreen-editor">
@@ -77,7 +98,7 @@ export function NotesEditor({
           className="scrollbar-thin"
           value={content}
           onChange={e => setContent(e.target.value)}
-          placeholder="Write your note here..."
+          placeholder="Your thoughts go here..."
         />
       </div>
     </div>

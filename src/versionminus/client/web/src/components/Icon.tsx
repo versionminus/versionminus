@@ -1,6 +1,18 @@
 import React from 'react';
 import {
-  VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscArrowUp, VscListUnordered
+  VscAdd,
+  VscClose,
+  VscTrash,
+  VscEdit,
+  VscCheck,
+  VscRefresh,
+  VscSave,
+  VscChevronLeft,
+  VscChevronRight,
+  VscCommentDiscussion,
+  VscNotebook,
+  VscArrowUp,
+  VscListUnordered
 } from 'react-icons/vsc';
 import {
   FiLogOut, FiMessageCircle, FiFileText, FiCalendar, FiDollarSign, FiFeather, FiAperture
@@ -13,6 +25,9 @@ export type IconName =
   | 'edit'
   | 'check'
   | 'refresh'
+  | 'save'
+  | 'chevron-left'
+  | 'chevron-right'
   | 'threads'
   | 'note'
   | 'send'
@@ -37,6 +52,9 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   edit: VscEdit,
   check: VscCheck,
   refresh: VscRefresh,
+  save: VscSave,
+  'chevron-left': VscChevronLeft,
+  'chevron-right': VscChevronRight,
   threads: VscCommentDiscussion,
   note: VscNotebook,
   send: VscArrowUp,

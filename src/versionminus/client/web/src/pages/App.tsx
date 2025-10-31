@@ -270,7 +270,7 @@ export function App() {
           title="Show thinking sessions"
           aria-label="Show thinking sessions"
         >
-          <Icon name="think" size={16} />
+          <Icon name="chevron-right" size={16} />
         </button>
       )}
       <section className="overlay-main" data-surface="glass">
@@ -323,7 +323,7 @@ export function App() {
           title="Show thoughts"
           aria-label="Show thoughts"
         >
-          <Icon name="thought" size={16} />
+          <Icon name="chevron-right" size={16} />
         </button>
       )}
       <section className="overlay-main overlay-main--thought" data-surface="glass">
@@ -353,7 +353,7 @@ export function App() {
         <IdentityGraph />
       </div>
       <div className="identity-caption">
-        Nurture your idendity
+        Nurture your identity
       </div>
     </div>
   );
