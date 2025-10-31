@@ -42,3 +42,4 @@ tests/test.db
 !.bashrc
 !.githooks
 !.gitignore
+!.dockerignore
