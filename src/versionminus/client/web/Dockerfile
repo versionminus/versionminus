@@ -21,8 +21,8 @@ RUN set -euo pipefail; \
       *) echo "Unsupported DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}" >&2; exit 1 ;; \
     esac; \
     echo "Installing versionminus@${SDK_DIST_TAG} for ${DEPLOYMENT_ENV} deployment"; \
-    # Use npm alias syntax so dist-tags like "dev" are resolved correctly.
-    npm pkg set "dependencies.versionminus=npm:versionminus@${SDK_DIST_TAG}"; \
+    # Use npm alias syntax so dist-tags on @versionminus/versionminus resolve correctly.
+    npm pkg set "dependencies.versionminus=npm:@versionminus/versionminus@${SDK_DIST_TAG}"; \
     # Drop the local lockfile so npm does not try to resolve the dev-only file: dependency.
     rm -f package-lock.json; \
     npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
