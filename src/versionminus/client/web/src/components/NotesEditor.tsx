@@ -9,11 +9,22 @@ interface Props {
   onDelete: (id: string) => Promise<void>;
   onClose: () => void;            // Close editor (without saving)
   onEmbed?: (id: string) => void; // Trigger embedding after save
+  autoCloseOnSave?: boolean;
+  autoCloseOnDelete?: boolean;
 }
 
 // Full screen editor that appears in the center content area.
 // Replaces the previous fullscreen mode embedded inside NotesPanel.
-export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose, onEmbed }: Props) {
+export function NotesEditor({
+  note,
+  onCreate,
+  onUpdate,
+  onDelete,
+  onClose,
+  onEmbed,
+  autoCloseOnSave = true,
+  autoCloseOnDelete = true,
+}: Props) {
   const isNew = !note; // Creating a new note when no note provided.
   const [content, setContent] = useState(note?.content || '');
   const [saving, setSaving] = useState(false);
@@ -32,23 +43,27 @@ export function NotesEditor({ note, onCreate, onUpdate, onDelete, onClose, onEmb
         const updated = await onUpdate(note.id, content);
         if (updated && onEmbed) onEmbed(updated.id);
       }
-      onClose();
     } finally {
       setSaving(false);
     }
-  }, [content, isNew, note, onCreate, onUpdate, onClose, onEmbed]);
+    if (autoCloseOnSave) {
+      onClose();
+    }
+  }, [content, isNew, note, onCreate, onUpdate, onClose, onEmbed, autoCloseOnSave]);
 
   const handleDelete = useCallback(async () => {
     if (!note) return;
     if (!window.confirm('Delete this note?')) return;
     await onDelete(note.id);
-    onClose();
-  }, [note, onDelete, onClose]);
+    if (autoCloseOnDelete) {
+      onClose();
+    }
+  }, [note, onDelete, onClose, autoCloseOnDelete]);
 
   return (
     <div className="note-fullscreen-container">
       <div className="note-fullscreen-bar">
-  <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" size={ICON_SIZE} /></button>
+        <button className="btn" title="New note" disabled={isNew} onClick={() => { setContent(''); }}><Icon name="plus" size={ICON_SIZE} /></button>
         {!isNew && (
           <button className="btn danger" title="Delete" onClick={() => { void handleDelete(); }}><Icon name="trash" size={ICON_SIZE} /></button>
         )}

@@ -3,7 +3,7 @@ import {
   VscAdd, VscClose, VscTrash, VscEdit, VscCheck, VscRefresh, VscCommentDiscussion, VscNotebook, VscArrowUp, VscListUnordered
 } from 'react-icons/vsc';
 import {
-  FiLogOut, FiMessageCircle, FiFileText, FiCalendar, FiDollarSign
+  FiLogOut, FiMessageCircle, FiFileText, FiCalendar, FiDollarSign, FiFeather, FiAperture
 } from 'react-icons/fi';
 
 export type IconName =
@@ -21,7 +21,11 @@ export type IconName =
   | 'chat'
   | 'file'
   | 'calendar'
-  | 'money';
+  | 'money'
+  | 'think'
+  | 'thought'
+  | 'time'
+  | 'identity';
 
 // Single source of truth for sizing all icon-only buttons.
 export const ICON_SIZE = 14; // px
@@ -41,7 +45,11 @@ const iconMap: Record<IconName, React.ComponentType<{ size?: number }>> = {
   chat: FiMessageCircle,
   file: FiFileText,
   calendar: FiCalendar,
-  money: FiDollarSign
+  money: FiDollarSign,
+  think: FiMessageCircle,
+  thought: FiFeather,
+  time: FiCalendar,
+  identity: FiAperture
 };
 
 interface Props { name: IconName; size?: number; }

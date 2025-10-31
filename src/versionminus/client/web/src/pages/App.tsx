@@ -1,18 +1,19 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useversionminus } from '@versionminus/sdk';
 import type { Note } from '@versionminus/sdk';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ChatPanel } from '../components/ChatPanel';
 import { NotesPanel } from '../components/NotesPanel';
 import { NotesEditor } from '../components/NotesEditor';
-import { QuotesComponent } from '../components/QuotesComponent';
 import { ThreadsPanel } from '../components/ThreadsPanel';
 import { SystemBar } from '../components/SystemBar';
 import { LandingPage } from './LandingPage';
+import { IdentityGraph } from '../components/IdentityGraph';
+import { Icon } from '../components/Icon';
+
+type ViewKey = 'think' | 'thought' | 'time' | 'money' | 'identity';
 
 export function App() {
-  // Allow overriding API base via Vite env variable. Use relative /api (proxied in dev,
-  // nginx in prod) so the browser stays same-origin.
   const apiBase = import.meta.env.VITE_API_BASE || '/api';
   const audience = import.meta.env.VITE_AUTH0_AUDIENCE;
 
@@ -28,16 +29,13 @@ export function App() {
 
   const [token, setToken] = useState<string>();
   const [tokenError, setTokenError] = useState<string | undefined>();
+  const [activeView, setActiveView] = useState<ViewKey>('identity');
+  const [selectedNote, setSelectedNote] = useState<Note | null>(null);
+  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [thinkSidebarOpen, setThinkSidebarOpen] = useState(true);
+  const [thoughtSidebarOpen, setThoughtSidebarOpen] = useState(true);
 
   const versionminus = useversionminus({ baseUrl: apiBase, token });
-
-  const [selectedNote, setSelectedNote] = useState<Note | null>(null); // Note selected in list / being edited
-  const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
-  const [showThreads, setShowThreads] = useState(true);
-  const [showNotes, setShowNotes] = useState(true);
-  const [noteEditorOpen, setNoteEditorOpen] = useState(false); // Controls display of center NotesEditor
-  const [selectedNoteIdsForContext, setSelectedNoteIdsForContext] = useState<string[]>([]);
-  const [notesFullscreen, setNotesFullscreen] = useState(false);
 
   const requestToken = useCallback(async () => {
     try {
@@ -76,7 +74,42 @@ export function App() {
     void requestToken();
   }, [authLoading, isAuthenticated, requestToken]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      setActiveView('identity');
+    } else {
+      setActiveView('identity');
+      setSelectedThreadId(null);
+      setSelectedNote(null);
+    }
+  }, [isAuthenticated]);
+
+  useEffect(() => {
+    if (activeView === 'think') setThinkSidebarOpen(true);
+    if (activeView === 'thought') setThoughtSidebarOpen(true);
+  }, [activeView]);
+
   const currentUserId = versionminus.currentUser?.id;
+  const threads = versionminus.threads.data ?? [];
+  const notes = versionminus.notes.data ?? [];
+
+  const notesById = useMemo(() => {
+    const map = new Map<string, Note>();
+    notes.forEach(n => { map.set(n.id, n); });
+    return map;
+  }, [notes]);
+
+  useEffect(() => {
+    if (activeView !== 'think' || selectedThreadId) return;
+    const first = threads[0];
+    if (first) setSelectedThreadId(first.id);
+  }, [activeView, selectedThreadId, threads]);
+
+  useEffect(() => {
+    if (activeView !== 'thought' || selectedNote) return;
+    const firstNote = notes[0];
+    if (firstNote) setSelectedNote(firstNote);
+  }, [activeView, selectedNote, notes]);
 
   const handleCreateNote = useCallback(async (content: string) => {
     if (!currentUserId) {
@@ -110,8 +143,29 @@ export function App() {
 
   const handleLogout = useCallback(() => {
     setToken(undefined);
+    setActiveView('identity');
+    setSelectedThreadId(null);
+    setSelectedNote(null);
     logout({ logoutParams: { returnTo: window.location.origin } });
   }, [logout]);
+
+  const handleSelectView = useCallback((view: ViewKey) => {
+    setActiveView(prev => {
+      if (prev === view && view !== 'identity') {
+        return 'identity';
+      }
+      return view;
+    });
+  }, []);
+
+  const handleOpenNote = useCallback((noteId: string) => {
+    const next = notesById.get(noteId) || null;
+    if (!next) return;
+    setSelectedNote(next);
+    setActiveView('thought');
+    setSelectedThreadId(null);
+    setThoughtSidebarOpen(true);
+  }, [notesById]);
 
   if (authError) {
     return (
@@ -166,84 +220,185 @@ export function App() {
   }
 
   const resolvedUserId = currentUserId!;
+  const displayEmail = versionminus.currentUser?.email || authUser?.email;
+
+  const renderThinkView = () => (
+    <div className="overlay-layer overlay-layer--think">
+      {thinkSidebarOpen && (
+        <aside className="overlay-sidebar" data-position="left">
+          <ThreadsPanel
+            threads={versionminus.threads.data}
+            loading={versionminus.threads.loading}
+            error={versionminus.threads.error}
+            selected={selectedThreadId}
+            onSelect={(thread) => {
+              setSelectedThreadId(thread.id);
+              setSelectedNote(null);
+              setActiveView('think');
+              void versionminus.loadMessages(thread.id);
+            }}
+            onCreate={async (title: string) => {
+              const thread = await versionminus.createThread({ title, user_id: resolvedUserId });
+              if (thread) {
+                setSelectedThreadId(thread.id);
+                setSelectedNote(null);
+                setActiveView('think');
+              }
+            }}
+            onRename={async (id: string, title: string) => {
+              await versionminus.updateThread(id, {
+                title,
+                user_id: threads.find(t => t.id === id)?.user_id || resolvedUserId,
+              });
+            }}
+            onDelete={async (id: string) => {
+              await versionminus.deleteThread(id);
+              if (selectedThreadId === id) {
+                setSelectedThreadId(null);
+              }
+            }}
+          />
+          <button
+            type="button"
+            className="overlay-collapse overlay-collapse--left"
+            onClick={() => setThinkSidebarOpen(false)}
+            title="Hide conversations"
+            aria-label="Hide conversations"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </aside>
+      )}
+      {!thinkSidebarOpen && (
+        <button
+          type="button"
+          className="overlay-expander overlay-expander--left"
+          onClick={() => setThinkSidebarOpen(true)}
+          title="Show conversations"
+          aria-label="Show conversations"
+        >
+          <Icon name="threads" size={16} />
+        </button>
+      )}
+      <section className="overlay-main" data-surface="glass">
+        {selectedThreadId ? (
+          <ChatPanel
+            versionminus={versionminus}
+            selectedNote={selectedNote}
+            selectedThreadId={selectedThreadId}
+            onThreadDeleted={(id) => {
+              if (selectedThreadId === id) setSelectedThreadId(null);
+            }}
+            onOpenNote={handleOpenNote}
+          />
+        ) : (
+          <div className="overlay-empty">
+            Select or create a conversation to begin.
+          </div>
+        )}
+      </section>
+    </div>
+  );
+
+  const renderThoughtView = () => (
+    <div className="overlay-layer overlay-layer--thought">
+      {thoughtSidebarOpen && (
+        <aside className="overlay-sidebar" data-position="left">
+          <NotesPanel
+            notesState={versionminus.notes}
+            selected={selectedNote?.id}
+            onSelect={(note) => {
+              setSelectedNote(note);
+              setActiveView('thought');
+            }}
+            onNew={() => {
+              setSelectedNote(null);
+              setActiveView('thought');
+            }}
+            onEmbed={(id: string) => { void versionminus.embedNote(id); }}
+            embeddingState={versionminus.embeddingState}
+          />
+          <button
+            type="button"
+            className="overlay-collapse overlay-collapse--left"
+            onClick={() => setThoughtSidebarOpen(false)}
+            title="Hide notes"
+            aria-label="Hide notes"
+          >
+            <Icon name="x" size={14} />
+          </button>
+        </aside>
+      )}
+      {!thoughtSidebarOpen && (
+        <button
+          type="button"
+          className="overlay-expander overlay-expander--left"
+          onClick={() => setThoughtSidebarOpen(true)}
+          title="Show notes"
+          aria-label="Show notes"
+        >
+          <Icon name="note" size={16} />
+        </button>
+      )}
+      <section className="overlay-main overlay-main--thought" data-surface="glass">
+        <NotesEditor
+          note={selectedNote}
+          onCreate={handleCreateNote}
+          onUpdate={handleUpdateNote}
+          onDelete={handleDeleteNote}
+          onEmbed={(id: string) => { void versionminus.embedNote(id); }}
+          onClose={() => setActiveView('identity')}
+          autoCloseOnSave={false}
+          autoCloseOnDelete={false}
+        />
+      </section>
+    </div>
+  );
+
+  const renderPlaceholder = () => (
+    <div className="overlay-layer overlay-layer--placeholder">
+      <section className="overlay-main overlay-main--blank" data-surface="glass" />
+    </div>
+  );
+
+  const renderIdentityView = () => (
+    <div className="identity-view">
+      <div className="identity-graph-card">
+        <IdentityGraph />
+      </div>
+      <div className="identity-caption">
+        Milestone thoughts shimmering into focus.
+      </div>
+    </div>
+  );
+
+  const viewContent = (() => {
+    switch (activeView) {
+      case 'think':
+        return renderThinkView();
+      case 'thought':
+        return renderThoughtView();
+      case 'time':
+        return renderPlaceholder();
+      case 'money':
+        return renderPlaceholder();
+      case 'identity':
+      default:
+        return renderIdentityView();
+    }
+  })();
 
   return (
-    <div className="layout-root flex-col-full">
+    <div className="app-shell">
       <SystemBar
-        versionminus={versionminus}
-        showThreads={showThreads}
-        showNotes={showNotes}
-        onToggleThreads={() => setShowThreads(s => !s)}
-        onToggleNotes={() => setShowNotes(s => !s)}
+        activeView={activeView}
+        onSelect={handleSelectView}
         onLogout={handleLogout}
-        userEmail={authUser?.email}
+        userEmail={displayEmail}
         loadingUser={!versionminus.currentUser}
       />
-      <div className="main-content">
-        {showThreads && (
-          <div className="threads-sidebar">
-            <ThreadsPanel
-              threads={versionminus.threads.data}
-              loading={versionminus.threads.loading}
-              error={versionminus.threads.error}
-              selected={selectedThreadId}
-              onSelect={t => { setSelectedThreadId(t.id); setNoteEditorOpen(false); setSelectedNote(null); void versionminus.loadMessages(t.id); }}
-              onCreate={async (title: string) => {
-                const t = await versionminus.createThread({ title, user_id: resolvedUserId });
-                if (t) { setSelectedThreadId(t.id); setSelectedNote(null); }
-              }}
-              onRename={async (id: string, title: string) => { await versionminus.updateThread(id, { title, user_id: versionminus.threads.data?.find(t => t.id === id)?.user_id || '' }); }}
-              onDelete={async (id: string) => { await versionminus.deleteThread(id); if (selectedThreadId === id) setSelectedThreadId(null); }}
-            />
-          </div>
-        )}
-        {/* Center content area: quotes, chat, or full-screen note editor */}
-        <div className="center-content">
-          {selectedThreadId && (
-            <ChatPanel
-              versionminus={versionminus}
-              selectedNote={null}
-              selectedThreadId={selectedThreadId}
-              onThreadDeleted={(id) => { if (selectedThreadId === id) setSelectedThreadId(null); }}
-              onOpenNote={(noteId) => {
-                const note = versionminus.notes.data?.find(n => n.id === noteId) || null;
-                if (note) {
-                  setSelectedNote(note);
-                  setSelectedThreadId(null); // leave chat view
-                  setNoteEditorOpen(true);
-                }
-              }}
-            />
-          )}
-          {!selectedThreadId && noteEditorOpen && (
-            <NotesEditor
-              note={selectedNote}
-              onCreate={handleCreateNote}
-              onUpdate={handleUpdateNote}
-              onDelete={handleDeleteNote}
-              onEmbed={(id: string) => { void versionminus.embedNote(id); }}
-              onClose={() => { setNoteEditorOpen(false); if (!selectedNote) { /* closing new note draft */ } }}
-            />
-          )}
-          {!selectedThreadId && !noteEditorOpen && (
-            <QuotesComponent />
-          )}
-        </div>
-        {showNotes && (
-          <div className="notes-sidebar">
-            <NotesPanel
-              notesState={versionminus.notes}
-              selected={selectedNote?.id}
-              onSelect={(n: Note) => { setSelectedNote(n); setSelectedThreadId(null); setNoteEditorOpen(true); }}
-              onNew={() => { setSelectedNote(null); setSelectedThreadId(null); setNoteEditorOpen(true); }}
-              onEmbed={(id: string) => { void versionminus.embedNote(id); }}
-              embeddingState={versionminus.embeddingState}
-              onSelectionChange={(ids) => setSelectedNoteIdsForContext(ids)}
-              fullscreen={notesFullscreen}
-              onToggleFullscreen={() => setNotesFullscreen(f => !f)}
-            />
-          </div>
-        )}
+      <div className="view-container">
+        {viewContent}
       </div>
     </div>
   );

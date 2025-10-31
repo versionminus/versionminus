@@ -283,3 +283,169 @@ button { font-family: inherit; }
   background: transparent;
   box-shadow: none;
 }
+
+/* Application shell + overlays */
+.app-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 24px 24px;
+}
+
+.view-container {
+  flex: 1;
+  display: flex;
+  position: relative;
+  min-height: 0;
+}
+
+.overlay-layer {
+  flex: 1;
+  display: flex;
+  gap: 18px;
+  min-height: 0;
+  position: relative;
+}
+
+.overlay-sidebar,
+.overlay-main[data-surface="glass"],
+.identity-graph-card {
+  background: rgba(10, 16, 30, 0.52);
+  border: 1px solid rgba(98, 118, 255, 0.28);
+  box-shadow: 0 32px 48px rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(22px);
+}
+
+.overlay-sidebar {
+  width: 280px;
+  padding: 14px;
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  position: relative;
+}
+
+.overlay-sidebar > * {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.overlay-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 18px;
+  border-radius: 24px;
+  position: relative;
+}
+
+.overlay-main--thought {
+  padding: 0;
+}
+
+.overlay-main--blank {
+  padding: 0;
+}
+
+.overlay-collapse,
+.overlay-expander {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(11, 18, 29, 0.62);
+  color: var(--sysbar-icon-on);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.overlay-collapse:hover,
+.overlay-expander:hover {
+  opacity: 0.92;
+}
+
+.overlay-collapse:active,
+.overlay-expander:active {
+  transform: scale(0.95);
+}
+
+.overlay-collapse {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+}
+
+.overlay-expander {
+  align-self: flex-start;
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+}
+
+.overlay-expander--left {
+  margin-left: 6px;
+}
+
+.overlay-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  font-size: 14px;
+  color: var(--text-secondary);
+  letter-spacing: 0.03em;
+}
+
+.identity-view {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-height: 0;
+}
+
+.identity-graph-card {
+  flex: 1;
+  min-height: 0;
+  border-radius: 28px;
+  overflow: hidden;
+  position: relative;
+}
+
+.identity-graph {
+  width: 100%;
+  height: 100%;
+}
+
+.identity-caption {
+  text-align: center;
+  color: rgba(226, 233, 255, 0.75);
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    padding: 12px 16px 18px;
+  }
+  .overlay-layer {
+    flex-direction: column;
+  }
+  .overlay-sidebar {
+    width: 100%;
+    order: 2;
+  }
+  .overlay-expander {
+    align-self: flex-end;
+  }
+}
