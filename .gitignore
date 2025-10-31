@@ -41,4 +41,6 @@ tests/test.db
 !.env.example
 !.bashrc
 !.githooks
+!.github
 !.gitignore
+!.dockerignore

@@ -1,0 +1,11 @@
+**/node_modules
+src/versionminus/client/web/dist
+src/versionminus/sdk/ts/dist
+src/versionminus/client/web/.vite
+*.tsbuildinfo
+.git
+.github
+.DS_Store
+Thumbs.db
+!src/versionminus/client/web/package-lock.json
+!src/versionminus/sdk/ts/package-lock.json

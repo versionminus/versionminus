@@ -1,21 +1,17 @@
-# Stage 1: build
+# Stage 1: build SDK + web assets
 FROM node:20-alpine AS build
-WORKDIR /app
 
-# Copy SDK first to leverage cache when only web changes
-COPY src/versionminus/sdk/ts /sdk
-WORKDIR /sdk
-RUN npm install && npm run build
-
-# Build web
-WORKDIR /app
-# Copy web manifest first for better layer caching
-COPY src/versionminus/client/web/package*.json ./
-# Copy web source so local file: deps can resolve during install
-COPY src/versionminus/client/web ./
-# Prefer deterministic installs when lockfile exists
+# Build the TypeScript SDK once and reuse the compiled output
+WORKDIR /sdk/ts
+COPY src/versionminus/sdk/ts/package*.json ./
 RUN npm install
-# Build web
+COPY src/versionminus/sdk/ts ./
+RUN npm run build
+
+# Build the React web client that depends on the local SDK
+WORKDIR /app
+COPY src/versionminus/client/web ./
+RUN npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
 RUN npm run build
 
 # Stage 2: nginx serve

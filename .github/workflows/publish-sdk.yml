@@ -1,0 +1,98 @@
+################################################################################
+# Publish versionminus TypeScript SDK
+#
+# This workflow publishes the TypeScript SDK (`src/versionminus/sdk/ts`) to the
+# `@versionminus` npm organisation via GitHub Actions. Release tags follow the
+# pattern `sdk-v<semver>`, with optional prerelease suffixes to map to the
+# correct npm dist-tag:
+#
+# - `sdk-v1.2.3-b.1` → publishes as version `1.2.3-b.1` on dist-tag `dev`
+# - `sdk-v1.2.3-a.1` → publishes as version `1.2.3-a.1` on dist-tag `beta`
+# - `sdk-v1.2.3-rc.1` → publishes as version `1.2.3-rc.1` on dist-tag `rc`
+# - `sdk-v1.2.3` → publishes as version `1.2.3` on dist-tag `latest`
+#
+# Pushing one of these tags (or dispatching manually with the tag provided)
+# causes the workflow to:
+# 1. Determine the version from the tag and choose the matching dist-tag.
+# 2. Update `package.json` via `npm version <semver> --no-git-tag-version`.
+# 3. Install dependencies, build, and `npm publish --tag <dist-tag>` using the
+#    `NPM_TOKEN` secret scoped to the `@versionminus` organisation.
+################################################################################
+
+name: Publish versionminus TypeScript SDK
+
+on:
+  workflow_dispatch:
+    inputs:
+      version_tag:
+        description: 'Tag to deploy (e.g., sdk-v1.2.3-rc.1)'
+        required: true
+  push:
+    tags:
+      - 'sdk-v[0-9]+\.[0-9]+\.[0-9]+'
+      - 'sdk-v[0-9]+\.[0-9]+\.[0-9]+-[a-z]+\.[0-9]+'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/versionminus/sdk/ts
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Determine release metadata
+        id: release
+        run: |
+          set -euo pipefail
+
+          if [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
+            VERSION_TAG='${{ github.event.inputs.version_tag }}'
+          else
+            VERSION_TAG="${GITHUB_REF_NAME}"
+          fi
+
+          if [[ -z "${VERSION_TAG}" ]]; then
+            echo "version_tag input is required when triggering manually." >&2
+            exit 1
+          fi
+
+          VERSION="${VERSION_TAG#sdk-v}" # trime prefix
+
+          if [[ "${VERSION}" == *-b.* ]]; then
+            DIST_TAG="dev"
+          elif [[ "${VERSION}" == *-a.* ]]; then
+            DIST_TAG="beta"
+          elif [[ "${VERSION}" == *-rc.* ]]; then
+            DIST_TAG="rc"
+          else
+            DIST_TAG="latest"
+          fi
+
+          echo "version_tag=${VERSION_TAG}" >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "dist_tag=${DIST_TAG}" >> "$GITHUB_OUTPUT"
+          echo "Publishing ${VERSION_TAG} as version ${VERSION} with dist-tag ${DIST_TAG}"
+
+      - name: Use Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Set package version
+        run: npm version '${{ steps.release.outputs.version }}' --no-git-tag-version --allow-same-version
+
+      - name: Build package
+        run: npm run build
+
+      - name: Publish package
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access public --tag '${{ steps.release.outputs.dist_tag }}'

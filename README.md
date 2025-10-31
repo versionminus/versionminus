@@ -144,6 +144,12 @@ Verify
 - `dig +short www.versionminus.com CNAME` → `versionminus.github.io.`
 - Pages Settings shows `DNS check successful` and HTTPS enabled.
 
+## GitHub setup
+
+- Generate an npm automation token with publish rights for the `@versionminus` scope (Account → Access Tokens in npm).
+- In GitHub go to `Settings → Secrets and variables → Actions → New repository secret`, name it `NPM_TOKEN`, and paste the npm token value.
+- The `Publish TypeScript SDK` workflow uses this secret to authenticate `npm publish` when `sdk-v*` tags (or manual dispatches) run.
+
 ## TLS/HTTPS (How it works)
 
 High‑level flow
