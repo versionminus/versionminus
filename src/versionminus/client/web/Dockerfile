@@ -16,8 +16,8 @@ RUN set -euo pipefail; \
       stable) SDK_DIST_TAG="latest" ;; \
       *) echo "Unsupported DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}" >&2; exit 1 ;; \
     esac; \
-    echo "Installing @versionminus/sdk@${SDK_DIST_TAG} for ${DEPLOYMENT_ENV} deployment"; \
-    npm pkg set "dependencies.@versionminus/sdk=@versionminus/sdk@${SDK_DIST_TAG}"; \
+    echo "Installing @versionminus@${SDK_DIST_TAG} for ${DEPLOYMENT_ENV} deployment"; \
+    npm pkg set "dependencies.@versionminus=@versionminus@${SDK_DIST_TAG}"; \
     npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
 
 RUN npm run build

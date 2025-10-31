@@ -406,7 +406,7 @@ versionminus-tempo             # obs: traces
 versionminus-otel-collector    # obs: telemetry
 ```
 
-- The `web` image build reads `DEPLOYMENT_ENV` (`dev`, `beta`, `rc`, `stable`) and installs `@versionminus/sdk` from the matching npm dist-tag (`dev`, `beta`, `rc`, `latest`). Run each stack with its own compose project name, e.g. `DEPLOYMENT_ENV=dev docker compose -p versionminus-dev up --build web`, so every environment serves the SDK version published for that channel.
+- The `web` image build reads `DEPLOYMENT_ENV` (`dev`, `beta`, `rc`, `stable`) and installs `@versionminus` from the matching npm dist-tag (`dev`, `beta`, `rc`, `latest`). Run each stack with its own compose project name, e.g. `DEPLOYMENT_ENV=dev docker compose -p versionminus-dev up --build web`, so every environment serves the SDK version published for that channel.
 
 Flow diagram
 

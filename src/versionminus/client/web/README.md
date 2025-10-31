@@ -1,6 +1,6 @@
 # versionminus Web
 
-Retro-modern terminal-inspired React interface consuming the local TypeScript SDK (`@versionminus/sdk`) exclusively—no direct REST calls in components.
+Retro-modern terminal-inspired React interface consuming the local TypeScript SDK (`@versionminus`) exclusively—no direct REST calls in components.
 
 ## Features
 

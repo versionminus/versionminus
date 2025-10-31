@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useversionminus } from '@versionminus/sdk';
-import type { Note } from '@versionminus/sdk';
+import { useversionminus } from '@versionminus';
+import type { Note } from '@versionminus';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ChatPanel } from '../components/ChatPanel';
 import { NotesPanel } from '../components/NotesPanel';
