@@ -312,7 +312,6 @@ button { font-family: inherit; }
 .overlay-main[data-surface="glass"],
 .identity-graph-card {
   background: rgba(10, 16, 30, 0.52);
-  border: 1px solid rgba(98, 118, 255, 0.28);
   box-shadow: 0 32px 48px rgba(0, 0, 0, 0.45);
   backdrop-filter: blur(22px);
 }
@@ -352,9 +351,7 @@ button { font-family: inherit; }
   padding: 0;
 }
 
-.overlay-collapse,
 .overlay-expander {
-  border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(11, 18, 29, 0.62);
   color: var(--sysbar-icon-on);
   display: flex;
@@ -364,23 +361,12 @@ button { font-family: inherit; }
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-.overlay-collapse:hover,
 .overlay-expander:hover {
   opacity: 0.92;
 }
 
-.overlay-collapse:active,
 .overlay-expander:active {
   transform: scale(0.95);
-}
-
-.overlay-collapse {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 12px;
 }
 
 .overlay-expander {

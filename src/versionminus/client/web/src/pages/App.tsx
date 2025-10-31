@@ -231,6 +231,8 @@ export function App() {
             loading={versionminus.threads.loading}
             error={versionminus.threads.error}
             selected={selectedThreadId}
+            onToggleList={() => setThinkSidebarOpen(false)}
+            listVisible={thinkSidebarOpen}
             onSelect={(thread) => {
               setSelectedThreadId(thread.id);
               setSelectedNote(null);
@@ -258,15 +260,6 @@ export function App() {
               }
             }}
           />
-          <button
-            type="button"
-            className="overlay-collapse overlay-collapse--left"
-            onClick={() => setThinkSidebarOpen(false)}
-            title="Hide conversations"
-            aria-label="Hide conversations"
-          >
-            <Icon name="x" size={14} />
-          </button>
         </aside>
       )}
       {!thinkSidebarOpen && (
@@ -274,10 +267,10 @@ export function App() {
           type="button"
           className="overlay-expander overlay-expander--left"
           onClick={() => setThinkSidebarOpen(true)}
-          title="Show conversations"
-          aria-label="Show conversations"
+          title="Show thinking sessions"
+          aria-label="Show thinking sessions"
         >
-          <Icon name="threads" size={16} />
+          <Icon name="think" size={16} />
         </button>
       )}
       <section className="overlay-main" data-surface="glass">
@@ -307,6 +300,8 @@ export function App() {
           <NotesPanel
             notesState={versionminus.notes}
             selected={selectedNote?.id}
+            onToggleList={() => setThoughtSidebarOpen(false)}
+            listVisible={thoughtSidebarOpen}
             onSelect={(note) => {
               setSelectedNote(note);
               setActiveView('thought');
@@ -318,15 +313,6 @@ export function App() {
             onEmbed={(id: string) => { void versionminus.embedNote(id); }}
             embeddingState={versionminus.embeddingState}
           />
-          <button
-            type="button"
-            className="overlay-collapse overlay-collapse--left"
-            onClick={() => setThoughtSidebarOpen(false)}
-            title="Hide notes"
-            aria-label="Hide notes"
-          >
-            <Icon name="x" size={14} />
-          </button>
         </aside>
       )}
       {!thoughtSidebarOpen && (
@@ -334,10 +320,10 @@ export function App() {
           type="button"
           className="overlay-expander overlay-expander--left"
           onClick={() => setThoughtSidebarOpen(true)}
-          title="Show notes"
-          aria-label="Show notes"
+          title="Show thoughts"
+          aria-label="Show thoughts"
         >
-          <Icon name="note" size={16} />
+          <Icon name="thought" size={16} />
         </button>
       )}
       <section className="overlay-main overlay-main--thought" data-surface="glass">
@@ -367,7 +353,7 @@ export function App() {
         <IdentityGraph />
       </div>
       <div className="identity-caption">
-        Milestone thoughts shimmering into focus.
+        Nurture your idendity
       </div>
     </div>
   );

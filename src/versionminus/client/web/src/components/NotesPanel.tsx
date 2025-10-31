@@ -16,10 +16,23 @@ interface Props {
   fullscreen?: boolean;
   /** @deprecated expansion/fullscreen has been removed */
   onToggleFullscreen?: () => void;
+  onToggleList?: () => void;
+  listVisible?: boolean;
 }
 
 // List-only panel. Editing moved to NotesEditor.
-export function NotesPanel({ notesState, selected, onSelect, onNew, onEmbed, embeddingState = {}, onSelectionChange /* fullscreen, onToggleFullscreen */ }: Props) {
+export function NotesPanel({
+  notesState,
+  selected,
+  onSelect,
+  onNew,
+  onEmbed,
+  embeddingState = {},
+  onSelectionChange,
+  onToggleList,
+  listVisible,
+  /* fullscreen, onToggleFullscreen */
+}: Props) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const toggleSelected = (id: string) => {
     setSelectedIds(prev => {
@@ -30,7 +43,7 @@ export function NotesPanel({ notesState, selected, onSelect, onNew, onEmbed, emb
   };
   const renderStatusIcon = (n: Note) => {
     const state = embeddingState[n.id] || (n.embedded ? 'embedded' : 'idle');
-  if (state === 'embedding') return <span title="embedding..." className="pulse" style={{ color: 'var(--warn)' }}>●</span>;
+    if (state === 'embedding') return <span title="embedding..." className="pulse" style={{ color: 'var(--warn)' }}>●</span>;
     if (state === 'embedded') return <span title="embedded" style={{ color: 'var(--success)' }}>●</span>;
     if (state === 'error') return <button className="icon-btn" title="retry embedding" onClick={(e) => { e.stopPropagation(); onEmbed?.(n.id); }} style={{ color: 'var(--danger)' }}>●</button>;
     return <button className="icon-btn" title="embed note" onClick={(e) => { e.stopPropagation(); onEmbed?.(n.id); }} style={{ color: 'var(--muted)' }}>○</button>;
@@ -38,15 +51,24 @@ export function NotesPanel({ notesState, selected, onSelect, onNew, onEmbed, emb
   return (
     <div className="flex-col-full">
       <div className="terminal-titlebar gap-6">
-        <span className="muted">notes</span>
+        <span className="muted">thought</span>
         <div className="actions-row">
-          <button className="btn" title="New note" onClick={onNew}><Icon name="plus" size={ICON_SIZE} /></button>
+          <button className="btn" title="New thought" onClick={onNew}><Icon name="plus" size={ICON_SIZE} /></button>
+          {onToggleList && (
+            <button
+              className="btn outline"
+              title={listVisible ? 'Hide thoughts' : 'Show thoughts'}
+              onClick={onToggleList}
+            >
+              <Icon name="thought" size={ICON_SIZE} />
+            </button>
+          )}
         </div>
       </div>
       <div className="panel-body" style={{ padding: 0 }}>
         <div className="note-list scrollbar-thin" style={{ gap:0 }}>
-          {notesState.loading && <div className="fade-text">loading notes...</div>}
-          {notesState.error && (notesState.data?.length || 0) > 0 && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading notes</div>}
+          {notesState.loading && <div className="fade-text">loading thoughts...</div>}
+          {notesState.error && (notesState.data?.length || 0) > 0 && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading thoughts</div>}
           {notesState.data?.map(n => {
             const first = (n.content.split('\n')[0] || 'Untitled').trim();
             return (
@@ -64,15 +86,14 @@ export function NotesPanel({ notesState, selected, onSelect, onNew, onEmbed, emb
               </div>
             );
           })}
-          {!notesState.loading && !(notesState.data?.length) && <div className="fade-text">no notes yet</div>}
+          {!notesState.loading && !(notesState.data?.length) && <div className="fade-text">no thoughts yet</div>}
         </div>
         {selectedIds.length > 0 && (
           <div className="note-selection-warning">
-            Using {selectedIds.length} selected note(s) as context only.
+            Using {selectedIds.length} selected thought(s) as context only.
           </div>
         )}
       </div>
     </div>
   );
 }
-
