@@ -146,7 +146,7 @@ Verify
 
 ## GitHub setup
 
-- Generate an npm automation token with publish rights for the `@versionminus` scope (Account → Access Tokens in npm).
+- Generate an npm automation token with publish rights for the `versionminus` package (Account → Access Tokens in npm).
 - Ensure the token type is **Automation**; classic or publish tokens tied to 2FA will trigger `npm ERR! code EOTP` in the GitHub Actions workflow.
 - In GitHub go to `Settings → Secrets and variables → Actions → New repository secret`, name it `NPM_TOKEN`, and paste the npm token value.
 - The `Publish TypeScript SDK` workflow uses this secret to authenticate `npm publish` when `sdk-v*` tags (or manual dispatches) run.
@@ -406,7 +406,7 @@ versionminus-tempo             # obs: traces
 versionminus-otel-collector    # obs: telemetry
 ```
 
-- The `web` image build reads `DEPLOYMENT_ENV` (`dev`, `beta`, `rc`, `stable`) and installs `@versionminus/sdk` from the matching npm dist-tag (`dev`, `beta`, `rc`, `latest`). Run each stack with its own compose project name, e.g. `DEPLOYMENT_ENV=dev docker compose -p versionminus-dev up --build web`, so every environment serves the SDK version published for that channel.
+- The `web` image build reads `DEPLOYMENT_ENV` (`dev`, `beta`, `rc`, `stable`) and installs `versionminus` from the matching npm dist-tag (`dev`, `beta`, `rc`, `latest`). Run each stack with its own compose project name, e.g. `DEPLOYMENT_ENV=dev docker compose -p versionminus-dev up --build web`, so every environment serves the SDK version published for that channel.
 
 Flow diagram
 
@@ -494,11 +494,11 @@ docker compose up -d --force-recreate api
 
 ```sh
 # sdk
-cd src/versionminus/sdk/ts && npm install && npm build && cd # first time setup
+cd src/versionminus/sdk/ts && npm install && npm run build && cd # first time setup
 cd src/versionminus/sdk/ts && npm run build && cd # otherwise
 
 # frontend
-cd src/versionminus/client/web && npm install && npm run build && cd # first time setup
+cd src/versionminus/client/web && npm install && npm run run build && cd # first time setup
 cd src/versionminus/client/web && npm run dev && cd
 ```
 ### Debugging

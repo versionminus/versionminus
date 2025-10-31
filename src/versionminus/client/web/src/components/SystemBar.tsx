@@ -1,5 +1,5 @@
 import React from 'react';
-import { getVersion } from '@versionminus/sdk';
+import { getVersion } from 'versionminus';
 import { Icon } from './Icon';
 import type { IconName } from './Icon';
 

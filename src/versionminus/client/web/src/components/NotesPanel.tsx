@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Note, AsyncState } from '@versionminus/sdk';
+import type { Note, AsyncState } from 'versionminus';
 import { Icon, ICON_SIZE } from './Icon';
 
 export interface EmbeddingStateMap { [id: string]: 'idle' | 'embedding' | 'error' | 'embedded'; }
