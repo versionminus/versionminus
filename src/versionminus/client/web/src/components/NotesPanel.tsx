@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { Note, AsyncState } from 'versionminus';
+import type { Note, AsyncState } from '@versionminus/versionminus';
 import { Icon, ICON_SIZE } from './Icon';
 
 export interface EmbeddingStateMap { [id: string]: 'idle' | 'embedding' | 'error' | 'embedded'; }
@@ -73,7 +73,7 @@ export function NotesPanel({
         <div className="note-list scrollbar-thin" style={{ gap:0 }}>
           {notesState.loading && <div className="fade-text">loading thoughts...</div>}
           {notesState.error && (notesState.data?.length || 0) > 0 && <div className="fade-text" style={{ color: 'var(--danger)' }}>error loading thoughts</div>}
-          {notesState.data?.map(n => {
+          {notesState.data?.map((n: Note) => {
             const first = (n.content.split('\n')[0] || 'Untitled').trim();
             return (
               <div

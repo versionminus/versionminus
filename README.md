@@ -495,10 +495,9 @@ docker compose up -d --force-recreate api
 ```sh
 # sdk
 cd src/versionminus/sdk/ts && npm install && npm run build && cd # first time setup
-cd src/versionminus/sdk/ts && npm run build && cd # otherwise
 
 # frontend
-cd src/versionminus/client/web && npm install && npm run run build && cd # first time setup
+cd src/versionminus/client/web && npm install && npm run build && cd # first time setup
 cd src/versionminus/client/web && npm run dev && cd
 ```
 ### Debugging

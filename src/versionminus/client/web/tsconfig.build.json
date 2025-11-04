@@ -1,0 +1,14 @@
+{
+  "extends": "./tsconfig.json",
+  // Override anything that could cause the compiler to chase workspace refs.
+  // In particular, drop project references so `tsc -b` does not attempt to
+  // load ../../sdk/ts inside Docker builds.
+  "references": [],
+  "include": ["src", "buildtypes/*.d.ts"],
+  "compilerOptions": {
+    // Ensure settings are compatible with vite build and do not emit.
+    "noEmit": true,
+    // Ensure production builds resolve from node_modules (published SDK), not local paths
+    "paths": {}
+  }
+}
