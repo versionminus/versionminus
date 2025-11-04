@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { useversionminus } from 'versionminus';
-import type { Note } from 'versionminus';
+import { useversionminus } from '@versionminus/versionminus';
+import type { Note, Thread } from '@versionminus/versionminus';
 import { useAuth0 } from '@auth0/auth0-react';
 import { ChatPanel } from '../components/ChatPanel';
 import { NotesPanel } from '../components/NotesPanel';
@@ -95,7 +95,7 @@ export function App() {
 
   const notesById = useMemo(() => {
     const map = new Map<string, Note>();
-    notes.forEach(n => { map.set(n.id, n); });
+    notes.forEach((n: Note) => { map.set(n.id, n); });
     return map;
   }, [notes]);
 
@@ -250,7 +250,7 @@ export function App() {
             onRename={async (id: string, title: string) => {
               await versionminus.updateThread(id, {
                 title,
-                user_id: threads.find(t => t.id === id)?.user_id || resolvedUserId,
+                user_id: threads.find((t: Thread) => t.id === id)?.user_id || resolvedUserId,
               });
             }}
             onDelete={async (id: string) => {

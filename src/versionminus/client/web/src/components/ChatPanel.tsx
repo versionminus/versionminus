@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Icon, ICON_SIZE } from './Icon';
 // Import from package root; deep path 'versionminus/lib/hooks/useversionminus' does not exist in published package.
-import type { UseversionminusReturn, Note, Message } from 'versionminus';
+import type { UseversionminusReturn, Note, Message, Source, Thread } from '@versionminus/versionminus';
 
 interface ChatLine { role: 'user' | 'assistant'; content: string; ts: number; }
 
@@ -43,7 +43,7 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
 
   // Determine if there is a pending assistant response (latest message without response)
   const pendingMessage = (() => {
-    const msgs = versionminus.messages.data?.filter(m => m.thread_id === selectedThreadId) || [];
+    const msgs = versionminus.messages.data?.filter((m: Message) => m.thread_id === selectedThreadId) || [];
     for (let i = msgs.length - 1; i >= 0; i--) {
       const m = msgs[i];
       if (!m.response || m.response.trim() === '') return m;
@@ -64,19 +64,19 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
   // Clear local pending lines when their persisted counterpart (with response) arrives
   useEffect(() => {
     if (!localPending.length) return;
-    const msgs = versionminus.messages.data?.filter(m => m.thread_id === selectedThreadId) || [];
+    const msgs = versionminus.messages.data?.filter((m: Message) => m.thread_id === selectedThreadId) || [];
     // If every local user line has a persisted message (regardless of response), drop optimistic copies
-    const allMatched = localPending.every(lp => msgs.some(m => m.content === lp.content));
+    const allMatched = localPending.every(lp => msgs.some((m: Message) => m.content === lp.content));
     if (allMatched) {
       // Keep them until at least one matched message has a response to maintain waiting state
-      const anyResponded = msgs.some(m => localPending.some(lp => lp.content === m.content) && m.response && m.response.trim() !== '');
+      const anyResponded = msgs.some((m: Message) => localPending.some(lp => lp.content === m.content) && m.response && m.response.trim() !== '');
       if (anyResponded) setLocalPending([]);
     }
   }, [versionminus.messages.data, localPending, selectedThreadId]);
 
   const waiting = localPending.length > 0 || !!pendingMessage;
 
-  const thread = versionminus.threads.data?.find(t => t.id === selectedThreadId);
+  const thread = versionminus.threads.data?.find((t: Thread) => t.id === selectedThreadId);
 
   const renameThread = useCallback(async () => {
     if (!thread) return;
@@ -101,7 +101,7 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
       setResetting(true);
       // Ensure we have latest messages loaded
       await versionminus.loadMessages(thread.id);
-      const msgs = versionminus.messages.data?.filter(m => m.thread_id === thread.id) || [];
+      const msgs = versionminus.messages.data?.filter((m: Message) => m.thread_id === thread.id) || [];
       // Delete sequentially to avoid hammering backend; order doesn't matter
       for (const m of msgs) {
         try { await versionminus.client.deleteMessage(m.id); } catch (e) { console.error(e); }
@@ -166,7 +166,7 @@ export function ChatPanel({ versionminus, selectedNote, selectedThreadId, onThre
                   {openSourcesFor === m.id && sourcesId && (
                     <div className='terminal-box mt-2'>
                       {!cached && <div className='fade-text'>loading sources...</div>}
-                      {cached && cached.map(s => {
+                      {cached && cached.map((s: Source) => {
                         const dist = typeof s.distance === 'number' ? s.distance.toFixed(3) : undefined;
                         return (
                           <div key={s.note_id} className='source-line'>

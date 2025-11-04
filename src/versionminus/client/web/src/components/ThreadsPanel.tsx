@@ -1,6 +1,6 @@
 import React, { useCallback, useState } from 'react';
 import { Icon, ICON_SIZE } from './Icon';
-import type { Thread } from 'versionminus';
+import type { Thread } from '@versionminus/versionminus';
 
 interface Props {
   threads: Thread[] | undefined;

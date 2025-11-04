@@ -139,14 +139,17 @@ services:
   #
   # local builds
   #
-  # VITE_DEPLOYMENT_ENV=stable docker compose build --no-cache web
+  # REQUIREMENTS
+  # - the versionminus SDK must have been deployed to the npmjs registry @versionminu/versionminus
+  #
+  # VERSIONMINUS_SDK_VERSION=v1.0.0-b.1 docker compose build --no-cache web
   web:
     build:
       context: .
       dockerfile: src/versionminus/client/web/Dockerfile
       target: runtime
       args: # build-time args
-        VITE_DEPLOYMENT_ENV: ${VITE_DEPLOYMENT_ENV:-dev}
+        SDK_VERSION: ${VERSIONMINUS_SDK_VERSION?Set VERSIONMINUS_SDK_VERSION (e.g. v1.0.0-b.1)}
     env_file: # run-time env vars
       - src/versionminus/client/web/.env
     image: versionminus-web:1.0.0
