@@ -15,14 +15,8 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
-    "paths": {
-      "@versionminus/versionminus": ["../../sdk/ts/src/index.ts"]
-    }
+    "baseUrl": "."
   },
   "include": ["src"],
-  // Keep project references only for local development. The production build
-  // uses tsconfig.build.json which excludes external workspace references so
-  // Docker builds do not try to access the SDK sources.
-  "references": [ { "path": "../../sdk/ts" } ]
+  // No project references here; dev-only path aliasing is handled in vite.config.ts
 }

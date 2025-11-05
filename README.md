@@ -2,6 +2,8 @@
 
 Welcome to `versionminus`. We're committed to assist you with becoming the best version of yourself by learning from your past behaviour and providing AI assisted decision making.
 
+<img width="1481" height="1016" alt="Image" src="https://github.com/user-attachments/assets/1c25b59c-360b-42c7-b6ed-733bb715fe06" />
+
 # Contributing
 
 We're delighted that you decided to contribute to the project.

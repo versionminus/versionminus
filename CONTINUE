@@ -1,0 +1,5 @@
+I published the SDK with types
+so the webapp should be able to import them
+npm run build should install from source
+docker compose build should install from the npmjs package (provided the version as a parameter)
+in reality the main client is ChatGPT, but I should have both clients

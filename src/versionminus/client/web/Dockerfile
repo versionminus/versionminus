@@ -28,10 +28,14 @@ RUN set -euo pipefail; \
     NORMALIZED_VERSION="${SDK_VERSION#v}"; \
     echo "Installing @versionminus/versionminus@${NORMALIZED_VERSION}"; \
     # Ensure dependency points at the published scoped package (no local file: ref)
-    npm pkg set "dependencies.@versionminus/versionminus=@${NORMALIZED_VERSION}"; \
+    # When specifying a version in package.json, do NOT prefix with '@'
+    npm pkg set "dependencies.@versionminus/versionminus=${NORMALIZED_VERSION}"; \
     # Drop the local lockfile so npm does not try to resolve the dev-only file: dependency.
     rm -f package-lock.json; \
     npm install || (find /root/.npm/_logs -type f -print -exec cat {} \; && exit 1)
+
+# Print installed SDK metadata for troubleshooting entry resolution
+RUN node -e "const p=require('./node_modules/@versionminus/versionminus/package.json'); console.log(JSON.stringify({name:p.name, version:p.version, type:p.type, main:p.main, module:p.module, exports:p.exports}, null, 2))" || true
 
 # Use the production build config that does not reference local SDK sources
 # Mark this build as running inside Docker so local-source aliases are disabled
