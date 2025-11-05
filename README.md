@@ -462,6 +462,20 @@ USRID=$(id -u) USRNAME=$(whoami) docker compose -f .devcontainer/compose.yml bui
 
 ## localhost
 
+port forwarding for the web container
+
+```config
+Host versionminus
+    HostName 85.10.206.37
+    User diogo
+    IdentityFile ~/.ssh/diogo_versionminus_ed25519
+    LocalForward 5173 localhost:5173
+```
+
+⚠️ We need to explicit the port forwarding for the versionminus-web container
+⚠️ but not when we run the web app locally in devcontainer, once devcontainer
+⚠️ handles on its own the port forwarding.
+
 ```sh
 # system dependencies
 sudo apt update && xargs -a .devcontainer/sys-requirements.txt sudo apt install -y --no-install-recommends && sudo apt clean
@@ -500,7 +514,7 @@ cd src/versionminus/sdk/ts && npm install && npm run build && cd # first time se
 
 # frontend
 cd src/versionminus/client/web && npm install && npm run build && cd # first time setup
-cd src/versionminus/client/web && npm run dev && cd
+cd src/versionminus/client/web && npm run dev
 ```
 ### Debugging
 

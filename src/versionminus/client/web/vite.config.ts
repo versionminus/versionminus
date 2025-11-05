@@ -20,6 +20,8 @@ function runningInDocker() {
 }
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const projectRoot = __dirname;
+const sdkSourcePath = path.resolve(projectRoot, '../../sdk/ts/src');
 
 function resolvePublishedSdkEntry() {
   try {
@@ -89,6 +91,10 @@ export default defineConfig(({ command }) => ({
         target: 'http://versionminus-api:8000',
         changeOrigin: true
       }
+    },
+    fs: {
+      // Allow serving the locally linked SDK sources when running the dev server.
+      allow: [projectRoot, sdkSourcePath]
     }
   },
   preview: {
