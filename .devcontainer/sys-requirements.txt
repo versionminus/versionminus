@@ -31,3 +31,4 @@ telnet
 git-lfs
 openssh-client
 imagemagick
+nginx

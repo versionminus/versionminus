@@ -160,8 +160,38 @@ services:
         condition: service_started
     environment:
       VITE_API_BASE_URL: http://versionminus-api:8000
+    expose:
+      - "80" # internal only; public traffic comes via the 'nginx' edge proxy
+    networks:
+      - versionminus
+
+  # EDGE / REVERSE PROXY #######################################################
+  #
+  # versionminus-nginx (public edge):
+  # - Terminates TLS on 443 and serves http-01 challenges on 80
+  # - Proxies www.versionminus.com traffic to the internal web app (versionminus-web)
+  # - Central place for redirects, security headers, compression, and future routing
+  #
+  # versionminus-web (app):
+  # - Serves the built React app over HTTP inside the Docker network
+  # - No public exposure; only the edge proxy talks to it
+  # - Continues to reverse-proxy /api to versionminus-api internally
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: versionminus-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
     ports:
-      - "5173:80"
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx vhost configs (HTTP always loaded; enable HTTPS after cert issuance)
+      - ./src/versionminus/nginx/conf.d:/etc/nginx/conf.d:ro
+      # ACME http-01 webroot (shared with certbot sidecar)
+      - ./src/versionminus/nginx/www:/var/www/html
+      # Let’s Encrypt cert storage (named volume persists across container restarts)
+      - versionminus-nginx-certs:/etc/letsencrypt
     networks:
       - versionminus
 
@@ -295,6 +325,9 @@ volumes:
     name: versionminus-tempo-data
   versionminus-grafana-data:
     name: versionminus-grafana-data
+  # Persist Let’s Encrypt certs for the edge proxy
+  versionminus-nginx-certs:
+    name: versionminus-nginx-certs
 
 networks:
   versionminus:
