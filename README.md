@@ -516,6 +516,12 @@ cd src/versionminus/sdk/ts && npm install && npm run build && cd # first time se
 cd src/versionminus/client/web && npm install && npm run build && cd # first time setup
 cd src/versionminus/client/web && npm run dev
 ```
+
+⚠️ NOTE Running the web app locally, since the port `5173` has been forwarded explicitly by the ssh file with `LocalForward 5173 localhost:5173`, devcontainer will forward the port of `npm run dev` to the next
+available port, i.e., `5174`. This url must be added explicitly to the Auth0 authorisation server application client `versionminus` allowed callback urls: `http://localhost:5173, http://localhost:5174, https://versionminus.com`
+
+
+
 ### Debugging
 
 Useful commands for debugging
