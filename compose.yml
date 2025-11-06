@@ -176,8 +176,16 @@ services:
   # - Serves the built React app over HTTP inside the Docker network
   # - No public exposure; only the edge proxy talks to it
   # - Continues to reverse-proxy /api to versionminus-api internally
+  #
+  # local build
+  #
+  # VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose up -d nginx
+  # VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose exec nginx nginx -t
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: src/versionminus/nginx
+      dockerfile: Dockerfile
+    image: versionminus-nginx:1.0.0
     container_name: versionminus-nginx
     restart: unless-stopped
     depends_on:
@@ -186,11 +194,9 @@ services:
       - "80:80"
       - "443:443"
     volumes:
-      # Nginx vhost configs (HTTP always loaded; enable HTTPS after cert issuance)
-      - ./src/versionminus/nginx/conf.d:/etc/nginx/conf.d:ro
       # ACME http-01 webroot (shared with certbot sidecar)
       - ./src/versionminus/nginx/www:/var/www/html
-      # Let’s Encrypt cert storage (named volume persists across container restarts)
+      # Let's Encrypt cert storage (named volume persists across container restarts)
       - versionminus-nginx-certs:/etc/letsencrypt
     networks:
       - versionminus

@@ -1,29 +1,12 @@
-# HTTPS template for versionminus public entry
-#
-# After issuing certificates with Certbot (stored under
-# /etc/letsencrypt/live/www.versionminus.com/), copy this file to
-#  /etc/nginx/conf.d/20-web-https.conf
-# and reload nginx. Until then, keep this file as a .template so nginx
-# does not try to load it without certs.
-
 server {
-  listen 80;
-  listen [::]:80;
-  server_name versionminus.com;
-  # Redirect apex to canonical www over HTTPS
-  return 301 https://www.versionminus.com$request_uri;
-}
-
-server {
-  listen 443 ssl http2;
-  listen [::]:443 ssl http2;
+  listen 443 ssl;
+  listen [::]:443 ssl;
+  http2 on;
   server_name www.versionminus.com;
 
-  # Let’s Encrypt certificate paths (created by certbot)
-  ssl_certificate     /etc/letsencrypt/live/www.versionminus.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/www.versionminus.com/privkey.pem;
+  ssl_certificate     /etc/letsencrypt/live/versionminus.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/versionminus.com/privkey.pem;
 
-  # Baseline TLS settings
   ssl_session_timeout 1d;
   ssl_session_cache shared:SSL:10m;
   ssl_protocols TLSv1.2 TLSv1.3;
@@ -31,17 +14,15 @@ server {
   ssl_prefer_server_ciphers on;
   add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
 
-  # ACME challenge still available on 443 if needed
   location /.well-known/acme-challenge/ {
     root /var/www/html;
   }
 
   location / {
-    proxy_pass http://versionminus-web:80;
+    proxy_pass http://web:80;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
   }
 }
-

@@ -137,14 +137,53 @@ Publish steps
 4. Enable `Enforce HTTPS`
 
 DNS (GoDaddy)
-- Apex `@` → A records: 185.199.108.153, .109.153, .110.153, .111.153
-- `www` → CNAME: `versionminus.github.io`
+- Apex `@` → A records: `85.10.206.37`
+- `www` → CNAME: `versionminus.com`
 - Remove URL forwarding and conflicting A/AAAA/CNAME records.
 
 Verify
 - `dig +short versionminus.com A` → four 185.199.* IPs
-- `dig +short www.versionminus.com CNAME` → `versionminus.github.io.`
+- `dig +short www.versionminus.com CNAME` → `versionminus.com.`
 - Pages Settings shows `DNS check successful` and HTTPS enabled.
+
+and run nginx reverse proxy
+
+```sh
+VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose build --no-cache nginx
+VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose up -d nginx
+```
+
+issue certificates once to the mount directory of the the nginx docker service
+
+```sh
+❯ docker run --rm \
+  -v "$(pwd)/src/versionminus/nginx/www:/var/www/html" \
+  -v versionminus-nginx-certs:/etc/letsencrypt \
+  certbot/certbot certonly --webroot -w /var/www/html \
+  -d versionminus.com -d www.versionminus.com \
+  --agree-tos -m diogo@versionminus.com \
+  --non-interactive --no-eff-email
+
+Saving debug log to /var/log/letsencrypt/letsencrypt.log
+Account registered.
+Requesting a certificate for versionminus.com and www.versionminus.com
+
+Successfully received certificate.
+Certificate is saved at: /etc/letsencrypt/live/versionminus.com/fullchain.pem
+Key is saved at:         /etc/letsencrypt/live/versionminus.com/privkey.pem
+This certificate expires on 2026-02-04.
+These files will be updated when the certificate renews.
+NEXT STEPS:
+- The certificate will need to be renewed before it expires. Certbot can automatically renew the certificate in the background, but you may need to take steps to enable that functionality. See https://certbot.org/renewal-setup for instructions.
+
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+If you like Certbot, please consider supporting our work by:
+ * Donating to ISRG / Let's Encrypt:   https://letsencrypt.org/donate
+ * Donating to EFF:                    https://eff.org/donate-le
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+```
+
+
 
 ## GitHub setup
 
@@ -519,7 +558,6 @@ cd src/versionminus/client/web && npm run dev
 
 ⚠️ NOTE Running the web app locally, since the port `5173` has been forwarded explicitly by the ssh file with `LocalForward 5173 localhost:5173`, devcontainer will forward the port of `npm run dev` to the next
 available port, i.e., `5174`. This url must be added explicitly to the Auth0 authorisation server application client `versionminus` allowed callback urls: `http://localhost:5173, http://localhost:5174, https://versionminus.com`
-
 
 
 ### Debugging

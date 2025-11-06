@@ -32,3 +32,4 @@ git-lfs
 openssh-client
 imagemagick
 nginx
+ufw
