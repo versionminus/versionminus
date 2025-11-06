@@ -183,7 +183,13 @@ If you like Certbot, please consider supporting our work by:
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 ```
 
+add the live HTTPS config to the nginx server
 
+```sh
+VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose exec nginx cp /etc/nginx/conf.d/20-web-https.conf.template etc/nginx/conf.d/20-web-https.conf
+VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose exec nginx nginx -t
+VERSIONMINUS_SDK_VERSION=v1.1.0-b.1 docker compose exec nginx nginx -s reload
+```
 
 ## GitHub setup
 
